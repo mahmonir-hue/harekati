@@ -10,7 +10,7 @@ import {
   updateAmbient,
   type GameState,
 } from "./game/engine";
-import { PoseController, type CameraStatus, type ModelStatus } from "./game/pose";
+import { PoseController, POSE_THRESHOLD, type CameraStatus, type DebugInfo, type ModelStatus } from "./game/pose";
 
 type Phase = "menu" | "playing" | "over";
 type Lang = "fa" | "en";
@@ -55,6 +55,18 @@ interface Strings {
   modelLoading: string;
   modelError: string;
   modelIdle: string;
+  aiStatus: string;
+  modelLbl: string;
+  predictionLbl: string;
+  currentAction: string;
+  stateReady: string;
+  stateError: string;
+  statePending: string;
+  stateLoading: string;
+  stateRunning: string;
+  stateStopped: string;
+  shortCamOn: string;
+  shortCamOff: string;
   detected: string;
   confidence: string;
   scanning: string;
@@ -101,8 +113,20 @@ const T: Record<Lang, Strings> = {
     camError: "خطای دوربین — جزئیات در کنسول مرورگر ثبت شد.",
     modelReady: "مدل حرکتی آماده است",
     modelLoading: "در حال بارگیری مدل حرکتی...",
-    modelError: "خطا در مدل حرکتی — کنترل با کیبورد فعال است",
+    modelError: "خطای مدل حرکتی:",
     modelIdle: "مدل حرکتی پس از روشن شدن دوربین بارگیری می‌شود.",
+    aiStatus: "وضعیت هوش مصنوعی",
+    modelLbl: "مدل",
+    predictionLbl: "پیش‌بینی",
+    currentAction: "کنش جاری",
+    stateReady: "آماده",
+    stateError: "خطا",
+    statePending: "در انتظار",
+    stateLoading: "در حال بارگیری",
+    stateRunning: "در حال اجرا",
+    stateStopped: "متوقف",
+    shortCamOn: "روشن",
+    shortCamOff: "خاموش",
     detected: "حرکت تشخیص داده‌شده",
     confidence: "میزان اطمینان",
     scanning: "در حال جست‌وجوی ژست...",
@@ -147,8 +171,20 @@ const T: Record<Lang, Strings> = {
     camError: "Camera error — details logged to browser console.",
     modelReady: "Pose Model Ready",
     modelLoading: "Loading motion model...",
-    modelError: "Motion model error — keyboard controls active",
+    modelError: "Pose Model Error:",
     modelIdle: "Pose model loads after the camera is turned on.",
+    aiStatus: "AI STATUS",
+    modelLbl: "Model",
+    predictionLbl: "Prediction",
+    currentAction: "Current Action",
+    stateReady: "READY",
+    stateError: "ERROR",
+    statePending: "PENDING",
+    stateLoading: "LOADING",
+    stateRunning: "RUNNING",
+    stateStopped: "STOPPED",
+    shortCamOn: "ON",
+    shortCamOff: "OFF",
     detected: "Detected Pose",
     confidence: "Confidence",
     scanning: "Scanning for poses...",
@@ -254,12 +290,15 @@ function GuideIcon() {
 
 /* ------------------------------- app -------------------------------- */
 
-interface Detection {
-  index: number; // -1 = nothing over threshold
-  name: string; // class name from model metadata, e.g. "Class 2"
-  conf: number; // 0..1 top probability
-  locked: boolean;
-}
+const DEFAULT_DEBUG: DebugInfo = {
+  tf: "pending",
+  model: "idle",
+  prediction: "stopped",
+  probs: [0, 0, 0, 0],
+  action: "NONE",
+  error: "",
+  labels: [],
+};
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -279,7 +318,8 @@ export default function App() {
   const [shieldOn, setShieldOn] = useState(false);
   const [modelStatus, setModelStatus] = useState<ModelStatus>("idle");
   const [camStatus, setCamStatus] = useState<CameraStatus>("off");
-  const [det, setDet] = useState<Detection>({ index: -1, name: "", conf: 0, locked: false });
+  const [dbg, setDbg] = useState<DebugInfo>(DEFAULT_DEBUG);
+  const [modelErr, setModelErr] = useState("");
   const [lang, setLang] = useState<Lang>(initialLang);
   const [guideOpen, setGuideOpen] = useState<boolean>(
     () => typeof window !== "undefined" && window.innerWidth >= 640
@@ -352,9 +392,12 @@ export default function App() {
     // Pose controller: webcam permission is requested ONLY on button click;
     // the TM model is loaded only after the webcam video is ready.
     const pc = new PoseController({
-      onModelStatus: (s) => setModelStatus(s),
+      onModelStatus: (s, err) => {
+        setModelStatus(s);
+        setModelErr(err);
+      },
       onCameraStatus: (s) => setCamStatus(s),
-      onDetection: (index, name, conf, locked) => setDet({ index, name, conf, locked }),
+      onDebug: (d) => setDbg(d),
       onMove: (dir) => {
         poseDirRef.current = dir;
       },
@@ -474,12 +517,29 @@ export default function App() {
       : modelStatus === "loading"
         ? t.modelLoading
         : modelStatus === "error"
-          ? t.modelError
+          ? `${t.modelError} ${modelErr || "unknown error"}`
           : t.modelReady;
 
-  const detLine = det.locked && det.index >= 0 ? `${t.detected}: ${det.name}` : t.scanning;
-  const confPct = Math.round(det.conf * 100);
-  const confStr = rtl ? `${faNum(confPct, lang)}٪` : `${confPct}%`;
+  /* short state labels for the AI STATUS debug panel */
+  const stateColor = (s: string) =>
+    s === "ready" || s === "running" || s === "on"
+      ? "text-emerald-300"
+      : s === "error"
+        ? "text-alert"
+        : s === "loading"
+          ? "text-star"
+          : "text-indigo-300/70";
+  const tfText = dbg.tf === "ready" ? t.stateReady : dbg.tf === "error" ? t.stateError : t.statePending;
+  const modelText =
+    dbg.model === "ready"
+      ? t.stateReady
+      : dbg.model === "error"
+        ? t.stateError
+        : dbg.model === "loading"
+          ? t.stateLoading
+          : t.statePending;
+  const camText = camStatus === "on" ? t.shortCamOn : camStatus === "starting" ? "…" : t.shortCamOff;
+  const predText = dbg.prediction === "running" ? t.stateRunning : t.stateStopped;
 
   const dotClass =
     camStatus === "on"
@@ -634,24 +694,51 @@ export default function App() {
             )}
           </div>
 
-          <div className="min-h-[3.6rem]">
+          <div className="min-h-[2.4rem]">
             <p className="font-display text-[10px] font-bold text-indigo-100">{camLine}</p>
-            {camStatus === "on" && modelStatus === "ready" ? (
-              <>
-                <p className="mt-0.5 text-[10px] font-bold leading-snug text-ion">{detLine}</p>
-                <p className="text-[10px] font-medium text-indigo-300/85">
-                  {t.confidence}:{" "}
-                  <span className={`tabular-nums ${det.locked ? "text-ion" : "text-indigo-300/85"}`}>{confStr}</span>
-                </p>
-              </>
-            ) : (
+            {camStatus !== "on" && (
               <p className="mt-0.5 text-[10px] font-medium leading-snug text-indigo-300/85">{modelLine}</p>
             )}
           </div>
 
+          {/* temporary AI STATUS debug panel — verifies the pose pipeline in the live browser */}
+          <div className="border border-indigo-400/20 bg-[#0a0f30]/80 px-2.5 py-2">
+            <p className="font-display text-[9px] font-bold tracking-[0.18em] text-star">{t.aiStatus}</p>
+            <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9.5px] font-semibold text-indigo-200/85">
+              <p>
+                TensorFlow: <b className={stateColor(dbg.tf)}>{tfText}</b>
+              </p>
+              <p>
+                {t.modelLbl}: <b className={stateColor(dbg.model)}>{modelText}</b>
+              </p>
+              <p>
+                {t.camera}: <b className={stateColor(camStatus === "on" ? "on" : "")}>{camText}</b>
+              </p>
+              <p>
+                {t.predictionLbl}: <b className={stateColor(dbg.prediction)}>{predText}</b>
+              </p>
+            </div>
+            <div className="mt-1.5 space-y-0.5 text-[9.5px] font-semibold tabular-nums text-indigo-200/85">
+              {dbg.probs.map((p, i) => (
+                <p key={i} dir="ltr" className="flex justify-between">
+                  <span>{dbg.labels[i] ?? `Class ${i + 1}`}</span>
+                  <span className={p >= POSE_THRESHOLD ? "font-bold text-ion" : ""}>
+                    {faNum(Math.round(p * 100), lang)}
+                    {rtl ? "٪" : "%"}
+                  </span>
+                </p>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[9.5px] font-semibold text-indigo-200/85">
+              {t.currentAction}:{" "}
+              <b className={dbg.action !== "NONE" ? "text-star" : "text-indigo-300/70"}>{dbg.action}</b>
+            </p>
+            {dbg.error && <p className="mt-1 text-[9.5px] font-bold leading-snug text-alert">{dbg.error}</p>}
+          </div>
+
           <div className="flex items-center gap-1.5">
             {[0, 1, 2, 3].map((i) => {
-              const active = camStatus === "on" && det.locked && det.index === i;
+              const active = camStatus === "on" && dbg.probs[i] >= POSE_THRESHOLD;
               return (
                 <span
                   key={i}

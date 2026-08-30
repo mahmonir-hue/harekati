@@ -1,36 +1,29 @@
-/* Type declarations for the CDN-loaded Teachable Machine Pose bundle
-   (window.tmPose), which ships without its own TypeScript types.
+/* Ambient module declaration for @teachablemachine/pose (npm).
+   Guarantees stable typings for the subset of the API the game uses,
+   regardless of the type files shipped inside the package. */
 
-   API reference (official sample):
-     const model = await tmPose.load(URL + "model.json");
-     // -> also fetches URL + "metadata.json" internally
-     const { posenetOutput } = await model.estimatePose(videoElement);
-     const predictions = await model.predict(posenetOutput);
-     // -> Array<{ className: string; probability: number }>  (may be sorted)
-     model.getClassLabels() -> string[]  (e.g. ["Class 1", ..., "Class 4"])
-*/
-
-export interface TmPosePrediction {
-  className: string;
-  probability: number;
-}
-
-export interface TmPoseModel {
-  predict(posenetOutput: unknown): Promise<TmPosePrediction[]>;
-  estimatePose(
-    source: HTMLVideoElement | HTMLCanvasElement | HTMLImageElement
-  ): Promise<{ pose: unknown; posenetOutput: unknown }>;
-  getClassLabels(): string[];
-  metadata?: { labels?: string[] };
-}
-
-declare global {
-  interface Window {
-    tmPose: {
-      load(url: string): Promise<TmPoseModel>;
-    };
+declare module "@teachablemachine/pose" {
+  export interface PosePrediction {
+    className: string;
+    probability: number;
   }
-  const tmPose: Window["tmPose"];
-}
 
-export {};
+  export interface CustomPoseMetadata {
+    labels?: string[];
+    [key: string]: unknown;
+  }
+
+  export interface CustomPoseNetModel {
+    metadata?: CustomPoseMetadata;
+    getMaxClasses?(): number;
+    estimatePose(
+      sample: HTMLVideoElement | HTMLCanvasElement | HTMLImageElement
+    ): Promise<{ pose: unknown; posenetOutput: Float32Array }>;
+    predict(posenetOutput: Float32Array): Promise<PosePrediction[]>;
+  }
+
+  export function load(
+    modelUrl: string,
+    metadataUrl?: string
+  ): Promise<CustomPoseNetModel>;
+}
