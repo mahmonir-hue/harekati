@@ -1,1 +1,283 @@
 @import "tailwindcss";
+
+@theme {
+  --font-display: "Orbitron", "Space Grotesk", sans-serif;
+  --font-body: "Space Grotesk", sans-serif;
+  --color-void: #04061a;
+  --color-hull: #0a0f2e;
+  --color-nebula: #7c5cff;
+  --color-ion: #5eeaff;
+  --color-star: #ffd75e;
+  --color-ember: #ff8c42;
+  --color-alert: #ff5d73;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: #04061a;
+  color: #e7ecff;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(94, 234, 255, 0.35);
+}
+
+/* ---------- HUD chips ---------- */
+.hud-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.42rem 0.85rem;
+  background: linear-gradient(180deg, rgba(16, 22, 58, 0.92), rgba(8, 11, 34, 0.92));
+  border: 1px solid rgba(124, 92, 255, 0.35);
+  box-shadow:
+    0 0 0 1px rgba(4, 6, 26, 0.6),
+    0 6px 22px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(160, 170, 255, 0.12);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.hud-label {
+  font-family: var(--font-body);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(165, 175, 235, 0.85);
+}
+.hud-chip--active {
+  border-color: rgba(94, 234, 255, 0.7);
+  box-shadow:
+    0 0 0 1px rgba(4, 6, 26, 0.6),
+    0 0 18px rgba(94, 234, 255, 0.35),
+    inset 0 1px 0 rgba(160, 170, 255, 0.12);
+}
+.hud-chip--active .hud-label {
+  color: #5eeaff;
+}
+
+/* vertical variant used by the motion-cam panel */
+.cam-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  background: linear-gradient(180deg, rgba(16, 22, 58, 0.94), rgba(8, 11, 34, 0.94));
+  border: 1px solid rgba(124, 92, 255, 0.35);
+  box-shadow:
+    0 0 0 1px rgba(4, 6, 26, 0.6),
+    0 10px 28px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(160, 170, 255, 0.12);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+
+/* ---------- Key caps ---------- */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.9rem;
+  height: 1.7rem;
+  padding: 0 0.45rem;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #bcd0ff;
+  background: linear-gradient(180deg, #232c63, #141a44);
+  border: 1px solid rgba(140, 150, 255, 0.45);
+  border-bottom-width: 3px;
+  border-radius: 0.35rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- Sci-fi panel with corner brackets ---------- */
+.bracket-panel {
+  position: relative;
+  border: 1px solid rgba(124, 92, 255, 0.32);
+  background: linear-gradient(180deg, rgba(10, 15, 46, 0.94), rgba(6, 8, 30, 0.94));
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.6),
+    0 0 60px rgba(124, 92, 255, 0.12),
+    inset 0 1px 0 rgba(160, 170, 255, 0.12);
+}
+.bracket-panel::before,
+.bracket-panel::after,
+.bracket-panel .corner-b::before,
+.bracket-panel .corner-b::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+.bracket-panel::before {
+  top: -2px;
+  left: -2px;
+  border-top: 2px solid #5eeaff;
+  border-left: 2px solid #5eeaff;
+}
+.bracket-panel::after {
+  top: -2px;
+  right: -2px;
+  border-top: 2px solid #5eeaff;
+  border-right: 2px solid #5eeaff;
+}
+.bracket-panel .corner-b::before {
+  bottom: -2px;
+  left: -2px;
+  border-bottom: 2px solid #5eeaff;
+  border-left: 2px solid #5eeaff;
+}
+.bracket-panel .corner-b::after {
+  bottom: -2px;
+  right: -2px;
+  border-bottom: 2px solid #5eeaff;
+  border-right: 2px solid #5eeaff;
+}
+
+/* ---------- Glow text ---------- */
+.glow-cyan {
+  text-shadow:
+    0 0 14px rgba(94, 234, 255, 0.75),
+    0 0 40px rgba(94, 234, 255, 0.3);
+}
+.glow-gold {
+  text-shadow:
+    0 0 14px rgba(255, 215, 94, 0.7),
+    0 0 38px rgba(255, 190, 60, 0.3);
+}
+.glow-soft {
+  text-shadow: 0 0 24px rgba(160, 150, 255, 0.45);
+}
+
+/* ---------- Buttons ---------- */
+.btn-primary {
+  font-family: var(--font-display);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #03121c;
+  background: linear-gradient(180deg, #8df2ff, #35cbe8);
+  border: 1px solid rgba(190, 250, 255, 0.9);
+  box-shadow:
+    0 0 22px rgba(94, 234, 255, 0.55),
+    0 8px 26px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+.btn-primary:hover {
+  filter: brightness(1.08);
+  box-shadow:
+    0 0 34px rgba(94, 234, 255, 0.8),
+    0 10px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transform: translateY(-2px);
+}
+.btn-primary:active {
+  transform: translateY(1px) scale(0.99);
+}
+.btn-ghost {
+  font-family: var(--font-display);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #bcd0ff;
+  border: 1px solid rgba(140, 150, 255, 0.4);
+  background: rgba(16, 22, 58, 0.7);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s ease;
+}
+.btn-ghost:hover {
+  background: rgba(94, 234, 255, 0.14);
+  color: #eafcff;
+  transform: translateY(-1px);
+}
+
+/* ---------- Camera preview ---------- */
+.cam-frame {
+  border: 1px solid rgba(124, 92, 255, 0.4);
+  background: #05071c;
+  box-shadow:
+    inset 0 0 24px rgba(20, 26, 80, 0.8),
+    0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.cam-frame canvas,
+.cam-frame video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: none;
+}
+
+/* ---------- Animations ---------- */
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes scan {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 6px;
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.anim-floaty {
+  animation: floaty 3.2s ease-in-out infinite;
+}
+.anim-pulse-glow {
+  animation: pulse-glow 1.6s ease-in-out infinite;
+}
+.anim-rise {
+  animation: rise-in 0.45s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+/* CRT-style scanline veil over the play area */
+.scanlines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(180, 200, 255, 0.045) 0px,
+    rgba(180, 200, 255, 0.045) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  animation: scan 0.9s linear infinite;
+}
+
+.conf-meter {
+  transition: width 0.18s ease-out;
+}
