@@ -1229,9 +1229,9 @@ export default function App() {
       {/* verification version badge (top-left corner) */}
       <div
         dir="ltr"
-        className="pointer-events-none absolute left-2 top-2 z-30 border border-ion/50 bg-[#0a0f2e]/95 px-2 py-0.5 font-display text-[9px] font-bold tracking-[0.14em] text-ion shadow-[0_0_10px_rgba(94,234,255,0.25)]"
+        className="pointer-events-none absolute left-2 top-2 z-50 border border-ion/50 bg-[#0a0f2e]/95 px-2 py-0.5 font-display text-[9px] font-bold tracking-[0.14em] text-ion shadow-[0_0_10px_rgba(94,234,255,0.25)]"
       >
-        VERSION: POSE-FIX-3
+        VERSION: UI-FIX-1
       </div>
 
       <div className="scanlines pointer-events-none absolute inset-0 z-10 opacity-50" />
@@ -1404,7 +1404,7 @@ export default function App() {
             ? `anim-sheet-in fixed inset-x-0 bottom-0 z-40 flex max-h-[85dvh] flex-col gap-2 overflow-y-auto modal-scroll border-t border-indigo-400/40 bg-[#0b1035] px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2.5 ${
                 panelOpen ? "" : "hidden"
               }`
-            : "absolute bottom-4 right-4 z-20 flex w-40 flex-col gap-2 sm:w-56"
+            : "modal-scroll absolute bottom-4 right-4 z-20 flex max-h-[calc(100dvh-9.5rem)] w-40 flex-col gap-2 overflow-y-auto sm:w-56"
         }
       >
         {narrow && (
@@ -1575,7 +1575,7 @@ export default function App() {
       {/* ------------------------------ start screen ------------------------------ */}
       {phase === "menu" && (
         <div className="modal-scroll absolute inset-0 z-30 overflow-y-auto bg-[rgba(3,5,20,0.62)]">
-          <div className="flex min-h-full items-center justify-center px-3 pb-8 pt-28 sm:p-4 sm:pt-10">
+          <div className="flex min-h-full items-center justify-center px-3 pb-8 pt-28 sm:px-4 sm:pb-8 sm:pt-36">
           <div className="bracket-panel anim-rise w-full max-w-xl px-4 py-6 sm:px-10 sm:py-9">
             <span className="corner-b" />
             <div className="flex items-center gap-2">
@@ -1661,7 +1661,7 @@ export default function App() {
       {/* ------------------------------ game over ------------------------------ */}
       {phase === "over" && (
         <div className="modal-scroll absolute inset-0 z-30 overflow-y-auto bg-[rgba(3,5,20,0.6)]">
-          <div className="flex min-h-full items-center justify-center px-3 pb-8 pt-28 sm:p-4 sm:pt-10">
+          <div className="flex min-h-full items-center justify-center px-3 pb-8 pt-28 sm:px-4 sm:pb-8 sm:pt-36">
           <div className="bracket-panel anim-rise w-full max-w-md px-5 py-7 text-center sm:px-8 sm:py-9">
             <span className="corner-b" />
             <p className={`font-display text-[10px] font-bold text-alert ${rtl ? "" : "tracking-[0.34em]"}`}>
