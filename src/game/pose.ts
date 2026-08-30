@@ -87,9 +87,9 @@ export class PoseController {
       probs: [...this.smoothed],
       action:
         this.active === 0
-          ? "LEFT"
+          ? "RIGHT" // mirrored swap — must match the onMove mapping below
           : this.active === 1
-            ? "RIGHT"
+            ? "LEFT"
             : this.active === 2
               ? "SHIELD"
               : this.active === 3
@@ -358,7 +358,11 @@ export class PoseController {
       }
 
       this.active = idx;
-      this.h.onMove(idx === 0 ? "left" : idx === 1 ? "right" : null);
+      // The preview video is mirrored (selfie mode), so the model's left/right
+      // arrive reversed relative to the player's body. Directions are swapped
+      // here: the player's LEFT pose (reported as Class 2 / idx 1) moves the
+      // ship LEFT, and the RIGHT pose (Class 1 / idx 0) moves it RIGHT.
+      this.h.onMove(idx === 0 ? "right" : idx === 1 ? "left" : null);
 
       if (now - this.lastUiAt > UI_INTERVAL) {
         this.lastUiAt = now;
