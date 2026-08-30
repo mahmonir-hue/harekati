@@ -493,6 +493,15 @@ export default function App() {
   return (
     <div dir={rtl ? "rtl" : "ltr"} className="relative h-full w-full select-none overflow-hidden font-body">
       <canvas ref={canvasRef} className="absolute inset-0 z-0" />
+
+      {/* verification version badge (top-left corner) */}
+      <div
+        dir="ltr"
+        className="pointer-events-none absolute left-2 top-2 z-30 border border-ion/50 bg-[#0a0f2e]/95 px-2 py-0.5 font-display text-[9px] font-bold tracking-[0.14em] text-ion shadow-[0_0_10px_rgba(94,234,255,0.25)]"
+      >
+        VERSION: POSE-FIX-3
+      </div>
+
       <div className="scanlines pointer-events-none absolute inset-0 z-10 opacity-50" />
       <div
         className="pointer-events-none absolute inset-0 z-10"
@@ -599,6 +608,11 @@ export default function App() {
             <span className="hud-label">{t.camera}</span>
             <span className={`h-2 w-2 rounded-full ${dotClass}`} />
           </div>
+
+          {/* verification status line */}
+          <p className="text-[9.5px] font-bold leading-snug text-emerald-300/90">
+            {lang === "fa" ? "نسخه جدید کنترل حرکتی بارگذاری شد" : "New Pose Fix Loaded"}
+          </p>
 
           <div className="cam-frame relative aspect-[4/3] overflow-hidden">
             <div ref={previewRef} className="absolute inset-0" />
