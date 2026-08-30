@@ -1241,7 +1241,7 @@ export default function App() {
       />
 
       {/* ------------------------------ top HUD ------------------------------ */}
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-wrap items-start gap-y-2 px-3 pb-2 pt-8 sm:p-5 sm:pt-8">
+      <header className="pointer-events-none absolute inset-x-0 top-0 z-40 flex flex-wrap items-start gap-y-2 px-3 pb-2 pt-8 sm:p-5 sm:pt-8">
         <div className="anim-rise w-full min-w-0 sm:w-auto">
           <h1 className="font-display text-lg font-extrabold text-white sm:text-2xl">{titleNode}</h1>
           <p className="mt-0.5 hidden text-[11px] font-medium text-indigo-300/70 sm:block">{t.tagline}</p>
@@ -1575,7 +1575,7 @@ export default function App() {
       {/* ------------------------------ start screen ------------------------------ */}
       {phase === "menu" && (
         <div className="modal-scroll absolute inset-0 z-30 overflow-y-auto bg-[rgba(3,5,20,0.62)]">
-          <div className="flex min-h-full items-center justify-center p-3 py-6 sm:p-4">
+          <div className="flex min-h-full items-center justify-center px-3 pb-8 pt-28 sm:p-4 sm:pt-10">
           <div className="bracket-panel anim-rise w-full max-w-xl px-4 py-6 sm:px-10 sm:py-9">
             <span className="corner-b" />
             <div className="flex items-center gap-2">
@@ -1661,7 +1661,7 @@ export default function App() {
       {/* ------------------------------ game over ------------------------------ */}
       {phase === "over" && (
         <div className="modal-scroll absolute inset-0 z-30 overflow-y-auto bg-[rgba(3,5,20,0.6)]">
-          <div className="flex min-h-full items-center justify-center p-3 py-6 sm:p-4">
+          <div className="flex min-h-full items-center justify-center px-3 pb-8 pt-28 sm:p-4 sm:pt-10">
           <div className="bracket-panel anim-rise w-full max-w-md px-5 py-7 text-center sm:px-8 sm:py-9">
             <span className="corner-b" />
             <p className={`font-display text-[10px] font-bold text-alert ${rtl ? "" : "tracking-[0.34em]"}`}>
