@@ -295,6 +295,111 @@ body {
     background-position: 0 6px;
   }
 }
+/* ---------- mobile / web-app layer ---------- */
+html,
+body {
+  overscroll-behavior: none;
+}
+@media (max-width: 639px) {
+  .hud-chip {
+    padding: 0.35rem 0.6rem;
+    gap: 0.4rem;
+  }
+}
+#root {
+  height: 100%;
+  height: 100dvh; /* dynamic viewport height for mobile browsers */
+}
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.modal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124, 92, 255, 0.35) transparent;
+}
+.modal-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.modal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(124, 92, 255, 0.35);
+  border-radius: 3px;
+}
+
+/* big touch targets for gameplay controls (>= 44x44) */
+.touch-btn {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  color: #bcd0ff;
+  border: 1px solid rgba(140, 150, 255, 0.45);
+  background: rgba(13, 19, 64, 0.82);
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.45),
+    inset 0 0 14px rgba(94, 234, 255, 0.06);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition:
+    transform 0.08s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.touch-btn:active {
+  transform: scale(0.9);
+  background: rgba(94, 234, 255, 0.2);
+  color: #eafcff;
+}
+
+/* small floating panel opener on phones */
+.mini-btn {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  color: #bcd0ff;
+  border: 1px solid rgba(140, 150, 255, 0.4);
+  background: rgba(13, 19, 64, 0.88);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease;
+}
+.mini-btn:hover,
+.mini-btn:active {
+  background: rgba(94, 234, 255, 0.16);
+  color: #eafcff;
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(26px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.anim-sheet-in {
+  animation: sheet-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+
+.guide-h {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: #eaf2ff;
+  font-size: 0.95rem;
+}
+
 @keyframes pop-in {
   from {
     opacity: 0;

@@ -14,21 +14,27 @@ import { audio, type AudioState } from "./game/audio";
 import { PoseController, POSE_THRESHOLD, type CameraStatus, type DebugInfo, type ModelStatus } from "./game/pose";
 
 type Phase = "menu" | "playing" | "over";
-type Lang = "fa" | "en";
+type Lang = "fa" | "en" | "ar";
 
 const LANG_KEY = "posepilot.lang";
+const BEST_KEY = "posepilot.best";
+const PHONE = "00971551544988";
 const FA_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
+const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
 
 /* ------------------------------ i18n ------------------------------ */
 
 function faNum(value: string | number, lang: Lang): string {
   const s = String(value);
-  return lang === "fa" ? s.replace(/[0-9]/g, (d) => FA_DIGITS[Number(d)]) : s;
+  if (lang === "en") return s;
+  const digits = lang === "ar" ? AR_DIGITS : FA_DIGITS;
+  return s.replace(/[0-9]/g, (d) => digits[Number(d)]);
 }
 
 function initialLang(): Lang {
   try {
-    return localStorage.getItem(LANG_KEY) === "en" ? "en" : "fa";
+    const v = localStorage.getItem(LANG_KEY);
+    return v === "en" || v === "ar" ? v : "fa";
   } catch {
     return "fa";
   }
@@ -102,6 +108,21 @@ interface Strings {
   volumeDown: string;
   volumeUp: string;
   volumeLabel: string;
+  about: string;
+  aboutP1: string;
+  creatorLineA: string;
+  creatorName: string;
+  creatorLineB: string;
+  instructorLbl: string;
+  instructorName: string;
+  contactLbl: string;
+  help: string;
+  closeLbl: string;
+  controlPanel: string;
+  bestScore: string;
+  landscapeHint: string;
+  moveLeft: string;
+  moveRight: string;
 }
 
 const T: Record<Lang, Strings> = {
@@ -173,6 +194,21 @@ const T: Record<Lang, Strings> = {
     volumeDown: "کاهش صدا",
     volumeUp: "افزایش صدا",
     volumeLabel: "صدا",
+    about: "👨‍💻 درباره سازنده",
+    aboutP1: "این پروژه با هدف یادگیری، خلاقیت و تجربه عملی در برنامه‌نویسی و هوش مصنوعی ساخته شده است.",
+    creatorLineA: "این بازی یکی از بازی‌های ساخته‌شده توسط",
+    creatorName: "هانیه، ۱۷ ساله از دبی",
+    creatorLineB: "است.",
+    instructorLbl: "استاد:",
+    instructorName: "دکتر ماه منیر آقایی",
+    contactLbl: "📞 شماره تماس استاد:",
+    help: "🎮 راهنمای بازی",
+    closeLbl: "بستن",
+    controlPanel: "پنل کنترل",
+    bestScore: "بهترین امتیاز",
+    landscapeHint: "برای تجربه بهتر، گوشی را افقی کنید",
+    moveLeft: "حرکت به چپ",
+    moveRight: "حرکت به راست",
   },
   en: {
     tagline: "body-controlled space run",
@@ -242,6 +278,105 @@ const T: Record<Lang, Strings> = {
     volumeDown: "Volume Down",
     volumeUp: "Volume Up",
     volumeLabel: "Volume",
+    about: "👨‍💻 About the Creator",
+    aboutP1: "This project was created with the goal of learning, creativity, and gaining practical experience in programming and artificial intelligence.",
+    creatorLineA: "This game is one of the games created by",
+    creatorName: "Hanieh, a 17-year-old from Dubai",
+    creatorLineB: ".",
+    instructorLbl: "Instructor:",
+    instructorName: "Dr. Mah Monir Aghaei",
+    contactLbl: "📞 Instructor Contact:",
+    help: "🎮 Game Guide",
+    closeLbl: "Close",
+    controlPanel: "Control Panel",
+    bestScore: "Best Score",
+    landscapeHint: "For a better experience, rotate your phone to landscape",
+    moveLeft: "Move left",
+    moveRight: "Move right",
+  },
+  ar: {
+    tagline: "تحليق فضائي بالتحكم الجسدي",
+    score: "النقاط",
+    lives: "الأرواح",
+    shield: "الدرع",
+    shieldUp: "الدرع مفعّل",
+    noShield: "بدون درع",
+    boost: "الاندفاع",
+    restart: "إعادة البدء",
+    camera: "الكاميرا",
+    camOnBtn: "تشغيل الكاميرا",
+    camOffBtn: "إيقاف الكاميرا",
+    camOff: "الكاميرا مطفأة",
+    camOn: "الكاميرا تعمل",
+    camStarting: "جارٍ تشغيل الكاميرا...",
+    camDenied: "تم رفض الوصول إلى الكاميرا. يرجى السماح بالوصول من إعدادات المتصفح.",
+    camInsecure: "تتطلب الكاميرا اتصال HTTPS أو localhost.",
+    camError: "خطأ في الكاميرا — التفاصيل في وحدة تحكم المتصفح.",
+    modelReady: "نموذج الحركة جاهز",
+    modelLoading: "جارٍ تحميل نموذج الحركة...",
+    modelError: "خطأ في نموذج الحركة:",
+    modelIdle: "يُحمَّل نموذج الحركة بعد تشغيل الكاميرا.",
+    aiStatus: "حالة الذكاء الاصطناعي",
+    modelLbl: "النموذج",
+    predictionLbl: "التنبؤ",
+    currentAction: "الإجراء الحالي",
+    stateReady: "جاهز",
+    stateError: "خطأ",
+    statePending: "بالانتظار",
+    stateLoading: "جارٍ التحميل",
+    stateRunning: "قيد التشغيل",
+    stateStopped: "متوقف",
+    shortCamOn: "تعمل",
+    shortCamOff: "مطفأة",
+    detected: "الوضعية المكتشفة",
+    confidence: "نسبة الثقة",
+    scanning: "جارٍ البحث عن وضعية...",
+    camHelp: "شغّل الكاميرا للتحكم في السفينة بحركات جسمك.",
+    camNote: "تعمل الكاميرا فقط عند الضغط على زر الكاميرا",
+    badge: "TEACHABLE MACHINE · POSE MODEL",
+    startGame: "ابدأ اللعبة",
+    descA: "قُد سفينة فضائية صغيرة بجسمك. التقط ",
+    stars: "النجوم",
+    descB: " المتساقطة وتفادَ ",
+    meteors: "النيازك",
+    descC: " لتنجو.",
+    controlsTitle: "التحكم — وضعيات الجسم + لوحة المفاتيح",
+    kbdLabel: "المفتاح",
+    scoring: "لكل نجم +١٠ نقاط · النيزك −١ روح · ٣ أرواح · الدرع يمتص ضربة واحدة",
+    poseGuide: "دليل الوضعيات",
+    gameOver: "انتهت اللعبة",
+    hullBreach: "اختراق الهيكل",
+    finalScore: "النتيجة النهائية",
+    starsCaught: "النجوم الملتقطة",
+    relaunchA: "اضغط",
+    relaunchB: "أو",
+    relaunchC: "للانطلاق من جديد",
+    publish: "نشر النتيجة",
+    publishCopied: "تم النسخ!",
+    publishShared: "تمت المشاركة",
+    publishFailed: "فشل النسخ",
+    audioPanel: "الصوت",
+    play: "تشغيل",
+    pause: "إيقاف مؤقت",
+    stop: "إيقاف",
+    volumeDown: "خفض الصوت",
+    volumeUp: "رفع الصوت",
+    volumeLabel: "الصوت",
+    about: "👨‍💻 حول مطوّر اللعبة",
+    aboutP1: "تم إنشاء هذا المشروع بهدف التعلم والإبداع واكتساب الخبرة العملية في البرمجة والذكاء الاصطناعي.",
+    creatorLineA: "هذه اللعبة هي إحدى الألعاب التي قامت بتطويرها",
+    creatorName: "هانية، البالغة من العمر 17 عامًا من دبي",
+    creatorLineB: ".",
+    instructorLbl: "المدرّسة:",
+    instructorName: "د. ماه منير آقايي",
+    contactLbl: "📞 رقم التواصل مع المدرّسة:",
+    help: "🎮 دليل اللعبة",
+    closeLbl: "إغلاق",
+    controlPanel: "لوحة التحكم",
+    bestScore: "أفضل نتيجة",
+    landscapeHint: "لتجربة أفضل، أدر هاتفك أفقياً",
+    moveLeft: "التحرك يساراً",
+    moveRight: "التحرك يميناً",
   },
 };
 
@@ -259,9 +394,134 @@ const GUIDE: Record<Lang, Array<{ cls: string; pose: string; action: string }>> 
     { cls: "Class 3", pose: "Extend both arms sideways", action: "Activate shield" },
     { cls: "Class 4", pose: "Raise both hands", action: "Boost upward" },
   ],
+  ar: [
+    { cls: "Class 1", pose: "مدّ الذراع اليسرى نحو اليسار", action: "تحريك السفينة إلى اليسار" },
+    { cls: "Class 2", pose: "مدّ الذراع اليمنى نحو اليمين", action: "تحريك السفينة إلى اليمين" },
+    { cls: "Class 3", pose: "مدّ الذراعين إلى الجانبين", action: "تفعيل الدرع" },
+    { cls: "Class 4", pose: "رفع اليدين إلى الأعلى", action: "الاندفاع نحو الأعلى" },
+  ],
 };
 
 const KBD_KEYS = ["←", "→", "SPACE", "↑"];
+
+/** Full game guide — written from the actual engine logic, per language. */
+interface GuideContent {
+  objectiveT: string;
+  objectiveB: string;
+  howT: string;
+  how: string[];
+  flowT: string;
+  flow: string[];
+  resultT: string;
+  resultB: string;
+  tipsT: string;
+  tips: string[];
+}
+
+const GUIDE_CONTENT: Record<Lang, GuideContent> = {
+  fa: {
+    objectiveT: "🎯 هدف بازی",
+    objectiveB:
+      "سفینه را در میدان فضایی هدایت کنید، ستاره‌های زردِ در حال سقوط را بگیرید و از شهاب‌سنگ‌ها جاخالی بدهید. هرچه ستاره‌های بیشتری جمع کنید و بیشتر دوام بیاورید، امتیاز بالاتری می‌گیرید.",
+    howT: "🎮 روش بازی",
+    how: [
+      "برای شروع، دکمهٔ «شروع بازی» را بزنید (یا کلید Space یا Enter).",
+      "حرکت به چپ و راست: با کیبورد ← و →، با دکمه‌های لمسی بزرگ روی موبایل، یا با ژست بدن پس از روشن کردن دوربین.",
+      "سپر (کلید Space یا کلاس ۳ بدن): یک ضربهٔ شهاب‌سنگ را دفع می‌کند و پس از آن حدود ۱٫۲ ثانیه تا شارژ دوباره زمان لازم است.",
+      "شتاب (کلید ↑ یا کلاس ۴ بدن): سفینه برای لحظه‌ای به سمت بالا می‌پرد.",
+      "هر ستارهٔ زرد = ۱۰+ امتیاز. ستاره‌ها خیلی بیشتر از شهاب‌سنگ‌ها ظاهر می‌شوند.",
+      "برخورد با شهاب‌سنگ = ۱− جان. شما ۳ جان دارید و بعد از هر برخورد، حدود ۱٫۸ ثانیه مصون هستید.",
+    ],
+    flowT: "🔄 روند بازی",
+    flow: [
+      "بازی از منوی اصلی شروع می‌شود؛ با «شروع بازی»، سفینه در نزدیکی پایینِ مرکز صفحه ظاهر می‌شود.",
+      "ستاره‌ها و شهاب‌سنگ‌ها از بالای صفحه به‌آرامی پایین می‌آیند.",
+      "با گرفتن ستاره‌ها امتیاز می‌گیرید و با جاخالی دادن از شهاب‌سنگ‌ها، جان‌هایتان را حفظ می‌کنید.",
+      "امتیاز، جان‌ها و وضعیت سپر همیشه در نوار بالای صفحه نمایش داده می‌شوند.",
+      "وقتی هر سه جان از دست برود، بازی تمام می‌شود.",
+      "با «شروع دوباره» یا کلیدهای Space / R بلافاصله از نو شروع کنید.",
+    ],
+    resultT: "🏆 پایان بازی",
+    resultB:
+      "در پایان، صفحهٔ «بازی تمام شد» امتیاز نهایی، تعداد ستاره‌های گرفته‌شده و بهترین امتیاز شما را نشان می‌دهد. بهترین امتیاز روی همین دستگاه ذخیره می‌شود و با دکمهٔ «انتشار امتیاز» می‌توانید نتیجه را به اشتراک بگذارید.",
+    tipsT: "💡 نکته‌ها",
+    tips: [
+      "حرکت سفینه نرم و پیوسته است؛ نیازی به حرکات تند و پشت‌سرهم نیست — نگه‌داشتن ژست، حرکت را ادامه می‌دهد.",
+      "سپر فقط یک ضربه را دفع می‌کند؛ آن را برای لحظه‌های خطر نگه دارید.",
+      "بعد از هر برخورد، سفینه برای مدت کوتاهی چشمک می‌زند و مصون است — از همین فرصت برای جابه‌جایی استفاده کنید.",
+      "برای تشخیص بهتر ژست‌ها، نور اتاق کافی باشد و بالاتنهٔ شما کامل داخل کادر دوربین باشد.",
+      "اگر دوربین خاموش باشد، کیبورد و دکمه‌های لمسی همیشه کار می‌کنند.",
+    ],
+  },
+  en: {
+    objectiveT: "🎯 Objective",
+    objectiveB:
+      "Steer the spaceship across the space field, catch the falling yellow stars and dodge the meteors. The more stars you collect and the longer you survive, the higher your score.",
+    howT: "🎮 How to play",
+    how: [
+      "Press “Start Game” (or the Space / Enter key) to begin.",
+      "Move left and right with the ← and → keys, the big on-screen touch buttons on mobile, or body poses after turning the camera on.",
+      "Shield (Space key or body Class 3): absorbs exactly one meteor hit, then needs about 1.2 seconds to recharge.",
+      "Boost (↑ key or body Class 4): the ship hops upward for a brief moment.",
+      "Each yellow star = +10 points. Stars appear far more often than meteors.",
+      "Hitting a meteor = −1 life. You have 3 lives, and about 1.8 seconds of invulnerability after each hit.",
+    ],
+    flowT: "🔄 Game flow",
+    flow: [
+      "The game starts from the main menu; after “Start Game” the ship appears near the bottom center of the screen.",
+      "Stars and meteors drift down slowly from the top of the screen.",
+      "Collect stars to score and dodge meteors to keep your lives.",
+      "Score, lives and shield status are always visible in the top bar.",
+      "When all three lives are lost, the game ends.",
+      "Press “Restart” or the Space / R keys to instantly play again.",
+    ],
+    resultT: "🏆 Game results",
+    resultB:
+      "At the end, the “Game Over” screen shows your final score, the number of stars caught and your best score. The best score is saved on this device, and the “Publish Score” button lets you share your result.",
+    tipsT: "💡 Tips",
+    tips: [
+      "Ship movement is smooth and continuous — no need for repeated quick gestures; holding a pose keeps the ship moving.",
+      "The shield absorbs only one hit; save it for dangerous moments.",
+      "After each hit the ship blinks and is invulnerable for a short time — use that moment to reposition.",
+      "For better pose detection, keep the room well lit and your upper body fully inside the camera frame.",
+      "If the camera is off, the keyboard and touch buttons always work.",
+    ],
+  },
+  ar: {
+    objectiveT: "🎯 هدف اللعبة",
+    objectiveB:
+      "قُد السفينة في الميدان الفضائي، والتقط النجوم الصفراء المتساقطة وتفادَ النيازك. كلما جمعت نجوماً أكثر وصمدت أطول، ارتفعت نقاطك.",
+    howT: "🎮 طريقة اللعب",
+    how: [
+      "اضغط «ابدأ اللعبة» (أو مفتاح المسافة / Enter) للبدء.",
+      "التحرك يميناً ويساراً: بمفتاحي ← و→، أو بأزرار اللمس الكبيرة على الجوال، أو بوضعيات الجسم بعد تشغيل الكاميرا.",
+      "الدرع (مفتاح المسافة أو وضعية Class 3): يمتص ضربة نيزك واحدة فقط، ثم يحتاج نحو ١٫٢ ثانية لإعادة الشحن.",
+      "الاندفاع (مفتاح ↑ أو وضعية Class 4): تقفز السفينة نحو الأعلى لحظة قصيرة.",
+      "كل نجم أصفر = +١٠ نقاط. تظهر النجوم أكثر بكثير من النيازك.",
+      "الاصطدام بنيزك = −١ روح. لديك ٣ أرواح، وتكون محمياً نحو ١٫٨ ثانية بعد كل اصطدام.",
+    ],
+    flowT: "🔄 سير اللعبة",
+    flow: [
+      "تبدأ اللعبة من القائمة الرئيسية؛ بعد «ابدأ اللعبة» تظهر السفينة قرب أسفل منتصف الشاشة.",
+      "تهبط النجوم والنيازك ببطء من أعلى الشاشة.",
+      "اجمع النجوم لتحصد النقاط وتفادَ النيازك للحفاظ على أرواحك.",
+      "تظهر النقاط والأرواح وحالة الدرع دائماً في الشريط العلوي.",
+      "عند خسارة الأرواح الثلاثة تنتهي اللعبة.",
+      "اضغط «إعادة البدء» أو مفتاحي المسافة / R للبدء من جديد فوراً.",
+    ],
+    resultT: "🏆 نهاية اللعبة",
+    resultB:
+      "في النهاية تعرض شاشة «انتهت اللعبة» نتيجتك النهائية وعدد النجوم الملتقطة وأفضل نتيجة لك. تُحفظ أفضل نتيجة على هذا الجهاز، ويُمكّنك زر «نشر النتيجة» من مشاركة نتيجتك.",
+    tipsT: "💡 نصائح",
+    tips: [
+      "حركة السفينة ناعمة ومستمرة — لا حاجة لحركات سريعة متكررة؛ إبقاء الوضعية يواصل التحريك.",
+      "الدرع يمتص ضربة واحدة فقط؛ احتفظ به للحظات الخطر.",
+      "بعد كل اصطدام تومض السفينة وتكون محمية لفترة قصيرة — استغلها لإعادة التموضع.",
+      "لكشف أفضل للوضعيات، أبقِ الغرفة مضاءة جيداً واجعل الجزء العلوي من جسمك كاملاً داخل إطار الكاميرا.",
+      "إذا كانت الكاميرا مطفأة، تعمل لوحة المفاتيح وأزرار اللمس دائماً.",
+    ],
+  },
+};
 
 /* --------------------------- tiny SVG icons --------------------------- */
 
@@ -381,6 +641,101 @@ function PlusIcon() {
   );
 }
 
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+      <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ left }: { left?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={`h-6 w-6 ${left ? "" : "rotate-180"}`}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.6"
+      aria-hidden
+    >
+      <path d="M14.5 5.5L8 12l6.5 6.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function BoostIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+      <path d="M12 20V5M6 10.5L12 4.5l6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SlidersIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M4 7h10M18 7h2M4 12h4M12 12h8M4 17h13M20 17h0.5" strokeLinecap="round" />
+      <circle cx="16" cy="7" r="2" />
+      <circle cx="10" cy="12" r="2" />
+      <circle cx="19" cy="17" r="2" />
+    </svg>
+  );
+}
+
+/* ------------------------------ modal -------------------------------- */
+
+function Modal({
+  title,
+  closeLabel,
+  rtl,
+  onClose,
+  children,
+}: {
+  title: string;
+  closeLabel: string;
+  rtl: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  useEffect(() => {
+    const f = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", f);
+    return () => window.removeEventListener("keydown", f);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(3,5,20,0.72)] sm:items-center sm:p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        dir={rtl ? "rtl" : "ltr"}
+        onClick={(e) => e.stopPropagation()}
+        className="bracket-panel modal-scroll anim-rise relative max-h-[92dvh] w-full overflow-y-auto px-5 pb-[max(1.4rem,env(safe-area-inset-bottom))] pt-4 sm:max-w-lg sm:px-8 sm:py-6"
+      >
+        <span className="corner-b" />
+        <div className="sticky top-0 z-10 -mx-5 flex items-center justify-between gap-3 border-b border-indigo-400/20 bg-[#0b1035]/95 px-5 pb-2.5 pt-1 backdrop-blur-sm sm:-mx-8 sm:px-8">
+          <h3 className="font-display text-base font-black text-white sm:text-lg">{title}</h3>
+          <button
+            onClick={onClose}
+            aria-label={closeLabel}
+            title={closeLabel}
+            className="flex h-9 w-9 shrink-0 items-center justify-center border border-indigo-400/40 bg-[#10163a] text-indigo-200 transition-colors duration-150 hover:bg-[#151d4c] hover:text-white"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------- app -------------------------------- */
 
 const DEFAULT_DEBUG: DebugInfo = {
@@ -421,9 +776,32 @@ export default function App() {
   const publishTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [audioState, setAudioState] = useState<AudioState>("stopped");
   const [vol, setVol] = useState(audio.volume);
+  const [modal, setModal] = useState<null | "about" | "guide">(null);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [bestScore, setBestScore] = useState<number>(() => {
+    try {
+      return Number(localStorage.getItem(BEST_KEY)) || 0;
+    } catch {
+      return 0;
+    }
+  });
+  const [narrow, setNarrow] = useState<boolean>(
+    () => typeof window !== "undefined" && window.innerWidth < 640
+  );
+  const [showTouch, setShowTouch] = useState<boolean>(
+    () =>
+      typeof window !== "undefined" &&
+      (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768)
+  );
+  const [portraitPhone, setPortraitPhone] = useState<boolean>(
+    () =>
+      typeof window !== "undefined" && window.innerHeight > window.innerWidth && window.innerWidth < 768
+  );
+  const [hintGone, setHintGone] = useState(false);
 
   const t = T[lang];
-  const rtl = lang === "fa";
+  const rtl = lang !== "en";
+  const gc = GUIDE_CONTENT[lang];
 
   const changePhase = useCallback((p: Phase) => {
     phaseRef.current = p;
@@ -550,6 +928,69 @@ export default function App() {
     }
   }, [lang, rtl]);
 
+  /* ------------------- responsive layout state (fluid) ------------------- */
+  useEffect(() => {
+    const onResize = () => {
+      setNarrow(window.innerWidth < 640);
+      setShowTouch(window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768);
+      setPortraitPhone(window.innerHeight > window.innerWidth && window.innerWidth < 768);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  /* close the mobile control panel with Escape */
+  useEffect(() => {
+    if (!panelOpen) return;
+    const f = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPanelOpen(false);
+    };
+    window.addEventListener("keydown", f);
+    return () => window.removeEventListener("keydown", f);
+  }, [panelOpen]);
+
+  /* auto-hide the rotate hint after a few seconds */
+  useEffect(() => {
+    if (portraitPhone && phase === "playing" && !hintGone) {
+      const id = setTimeout(() => setHintGone(true), 7000);
+      return () => clearTimeout(id);
+    }
+  }, [portraitPhone, phase, hintGone]);
+
+  /* ----------------------- touch gameplay handlers ----------------------- */
+  const holdStart = useCallback(
+    (side: "left" | "right") => (e: React.PointerEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+      kbRef.current[side] = true;
+    },
+    []
+  );
+  const holdEnd = useCallback(() => {
+    kbRef.current.left = false;
+    kbRef.current.right = false;
+  }, []);
+  const tapShield = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      if (phaseRef.current === "playing") {
+        triggerShield(gsRef.current);
+        audio.shield();
+      }
+    },
+    []
+  );
+  const tapBoost = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      if (phaseRef.current === "playing") {
+        triggerBoost(gsRef.current);
+        audio.boost();
+      }
+    },
+    []
+  );
+
   /* ------------------------- mount: loop + input ------------------------- */
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -670,7 +1111,21 @@ export default function App() {
           hud.shield = gs.ship.shield;
           setShieldOn(gs.ship.shield);
         }
-        if (gs.over) changePhase("over");
+        if (gs.over) {
+          const finalScore = gs.score;
+          setBestScore((b) => {
+            if (finalScore > b) {
+              try {
+                localStorage.setItem(BEST_KEY, String(finalScore));
+              } catch {
+                /* ignore */
+              }
+              return finalScore;
+            }
+            return b;
+          });
+          changePhase("over");
+        }
       } else {
         updateAmbient(gs, dt);
       }
@@ -744,9 +1199,32 @@ export default function App() {
           ? "bg-alert shadow-[0_0_8px_rgba(255,93,115,0.8)]"
           : "bg-slate-600";
 
+  const titleNode =
+    lang === "en" ? (
+      <>
+        POSE<span className="text-ion glow-cyan">PILOT</span>
+      </>
+    ) : lang === "ar" ? (
+      <>
+        طيّار <span className="text-ion glow-cyan">الكون</span>
+      </>
+    ) : (
+      <>
+        خلبان <span className="text-ion glow-cyan">کیهان</span>
+      </>
+    );
+
+  const guideRows = GUIDE[lang].map((g, i) => (
+    <div key={g.cls} className={i > 0 ? "mt-2 border-t border-indigo-400/15 pt-2" : ""}>
+      <p className="font-display text-[9px] font-bold tracking-[0.18em] text-ion/85">{g.cls}</p>
+      <p className="mt-0.5 text-[10.5px] font-medium leading-snug text-indigo-100/90">{g.pose}</p>
+      <p className="text-[10.5px] font-bold leading-snug text-star">→ {g.action}</p>
+    </div>
+  ));
+
   return (
-    <div dir={rtl ? "rtl" : "ltr"} className="relative h-full w-full select-none overflow-hidden font-body">
-      <canvas ref={canvasRef} className="absolute inset-0 z-0" />
+    <div dir={rtl ? "rtl" : "ltr"} className="relative h-full w-full touch-manipulation select-none overflow-hidden font-body">
+      <canvas ref={canvasRef} className="absolute inset-0 z-0 touch-none" />
 
       {/* verification version badge (top-left corner) */}
       <div
@@ -763,44 +1241,29 @@ export default function App() {
       />
 
       {/* ------------------------------ top HUD ------------------------------ */}
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 p-4 sm:p-5">
-        <div className="anim-rise">
-          <h1 className="font-display text-xl font-extrabold text-white sm:text-2xl">
-            {rtl ? (
-              <>
-                خلبان <span className="text-ion glow-cyan">کیهان</span>
-              </>
-            ) : (
-              <>
-                POSE<span className="text-ion glow-cyan">PILOT</span>
-              </>
-            )}
-          </h1>
-          <p className="mt-0.5 text-[11px] font-medium text-indigo-300/70">{t.tagline}</p>
-          <div className="pointer-events-auto mt-2 inline-flex items-center rounded-full border border-indigo-400/30 bg-[#0d1340]/85 p-0.5 text-[10px] font-bold">
-            <button
-              onClick={() => setLang("fa")}
-              className={`rounded-full px-2.5 py-1 transition-colors duration-150 ${
-                lang === "fa" ? "bg-ion/20 text-ion" : "text-indigo-300/70 hover:text-indigo-100"
-              }`}
-            >
-              فارسی
-            </button>
-            <button
-              onClick={() => setLang("en")}
-              className={`rounded-full px-2.5 py-1 transition-colors duration-150 ${
-                lang === "en" ? "bg-ion/20 text-ion" : "text-indigo-300/70 hover:text-indigo-100"
-              }`}
-            >
-              English
-            </button>
+      <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-wrap items-start gap-y-2 px-3 pb-2 pt-8 sm:p-5 sm:pt-8">
+        <div className="anim-rise w-full min-w-0 sm:w-auto">
+          <h1 className="font-display text-lg font-extrabold text-white sm:text-2xl">{titleNode}</h1>
+          <p className="mt-0.5 hidden text-[11px] font-medium text-indigo-300/70 sm:block">{t.tagline}</p>
+          <div className="pointer-events-auto mt-1.5 inline-flex items-center rounded-full border border-indigo-400/30 bg-[#0d1340]/85 p-0.5 text-[10px] font-bold">
+            {(["fa", "ar", "en"] as Lang[]).map((l) => (
+              <button
+                key={l}
+                onClick={() => setLang(l)}
+                className={`rounded-full px-2 py-0.5 transition-colors duration-150 sm:px-2.5 sm:py-1 ${
+                  lang === l ? "bg-ion/20 text-ion" : "text-indigo-300/70 hover:text-indigo-100"
+                }`}
+              >
+                {l === "fa" ? "فارسی" : l === "ar" ? "العربية" : "English"}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+        <div className="ms-auto flex flex-wrap items-center justify-end gap-1.5 sm:gap-3">
           <div className="hud-chip">
             <span className="hud-label">{t.score}</span>
-            <span className="font-display text-lg font-bold tabular-nums leading-none text-star glow-gold sm:text-xl">
+            <span className="font-display text-base font-bold tabular-nums leading-none text-star glow-gold sm:text-xl">
               {faNum(String(score).padStart(4, "0"), lang)}
             </span>
           </div>
@@ -816,22 +1279,25 @@ export default function App() {
 
           <div className={`hud-chip ${shieldOn ? "hud-chip--active" : ""}`} title={t.shield}>
             <ShieldIcon on={shieldOn} />
-            <span className="hud-label">{shieldOn ? t.shieldUp : t.noShield}</span>
+            <span className="hud-label hidden sm:inline">{shieldOn ? t.shieldUp : t.noShield}</span>
           </div>
 
           {phase !== "menu" && (
             <button
               onClick={restart}
-              className="btn-ghost pointer-events-auto flex items-center gap-2 px-3.5 py-2 text-[11px] font-bold"
+              aria-label={t.restart}
+              title={t.restart}
+              className="btn-ghost pointer-events-auto flex min-h-9 items-center gap-2 px-2.5 py-2 text-[11px] font-bold sm:px-3.5"
             >
               <RestartIcon />
-              {t.restart}
+              <span className="hidden sm:inline">{t.restart}</span>
             </button>
           )}
         </div>
       </header>
 
-      {/* --------------------------- pose guide panel --------------------------- */}
+      {/* --------------------------- pose guide panel (desktop) --------------------------- */}
+      {!narrow && (
       <div className="absolute bottom-4 left-4 z-20 flex w-44 flex-col-reverse items-start gap-2 sm:w-64">
         <button
           onClick={() => setGuideOpen((o) => !o)}
@@ -842,28 +1308,126 @@ export default function App() {
           <span className="text-ion">{guideOpen ? "−" : "+"}</span>
         </button>
 
-        {guideOpen && (
-          <div className="cam-panel w-full">
-            {GUIDE[lang].map((g, i) => (
-              <div key={g.cls} className={i > 0 ? "mt-2 border-t border-indigo-400/15 pt-2" : ""}>
-                <p className="font-display text-[9px] font-bold tracking-[0.18em] text-ion/85">{g.cls}</p>
-                <p className="mt-0.5 text-[10.5px] font-medium leading-snug text-indigo-100/90">{g.pose}</p>
-                <p className="text-[10.5px] font-bold leading-snug text-star">→ {g.action}</p>
-              </div>
-            ))}
+        {guideOpen && <div className="cam-panel w-full">{guideRows}</div>}
+      </div>
+      )}
+
+      {/* mobile: floating control-panel opener */}
+      {narrow && phase !== "menu" && (
+        <button
+          onClick={() => setPanelOpen(true)}
+          aria-label={t.controlPanel}
+          title={t.controlPanel}
+          className="mini-btn absolute right-2.5 z-30 bottom-[max(6rem,calc(env(safe-area-inset-bottom)+5.5rem))]"
+        >
+          <SlidersIcon />
+        </button>
+      )}
+
+      {/* mobile: backdrop for the bottom-sheet panel */}
+      {narrow && panelOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-[rgba(3,5,20,0.55)]"
+          onClick={() => setPanelOpen(false)}
+          aria-hidden
+        />
+      )}
+
+      {/* touch gameplay controls (phones & tablets with coarse pointers) */}
+      {showTouch && phase === "playing" && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end justify-between gap-2 px-3 pb-[max(0.9rem,env(safe-area-inset-bottom))]">
+          <div className="pointer-events-auto flex gap-2.5">
+            <button
+              className="touch-btn"
+              aria-label={t.moveLeft}
+              onPointerDown={holdStart("left")}
+              onPointerUp={holdEnd}
+              onPointerCancel={holdEnd}
+              onPointerLeave={holdEnd}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <ChevronIcon left />
+            </button>
+            <button
+              className="touch-btn"
+              aria-label={t.moveRight}
+              onPointerDown={holdStart("right")}
+              onPointerUp={holdEnd}
+              onPointerCancel={holdEnd}
+              onPointerLeave={holdEnd}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <ChevronIcon />
+            </button>
+          </div>
+          <div className="pointer-events-auto flex gap-2.5">
+            <button
+              className="touch-btn text-star"
+              aria-label={t.boost}
+              onPointerDown={tapBoost}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <BoostIcon />
+            </button>
+            <button
+              className="touch-btn text-ion"
+              aria-label={t.shield}
+              onPointerDown={tapShield}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor" aria-hidden>
+                <path d="M12 2l8 3.5V11c0 5.2-3.4 8.6-8 11-4.6-2.4-8-5.8-8-11V5.5L12 2z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* soft, non-blocking rotate hint for portrait phones */}
+      {portraitPhone && phase === "playing" && !hintGone && (
+        <div className="anim-rise absolute left-1/2 top-[4.4rem] z-20 flex -translate-x-1/2 items-center gap-2 border border-indigo-400/30 bg-[#0d1340]/90 py-1.5 pe-1.5 ps-3 text-[10px] font-bold text-indigo-200 shadow-[0_6px_20px_rgba(0,0,0,0.4)]">
+          <span>📱 {t.landscapeHint}</span>
+          <button
+            onClick={() => setHintGone(true)}
+            aria-label={t.closeLbl}
+            className="flex h-6 w-6 items-center justify-center text-indigo-300/80 hover:text-white"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+      )}
+
+      {/* -------- audio + camera column: fixed panel on desktop, bottom sheet on phones -------- */}
+      <aside
+        className={
+          narrow
+            ? `anim-sheet-in fixed inset-x-0 bottom-0 z-40 flex max-h-[85dvh] flex-col gap-2 overflow-y-auto modal-scroll border-t border-indigo-400/40 bg-[#0b1035] px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2.5 ${
+                panelOpen ? "" : "hidden"
+              }`
+            : "absolute bottom-4 right-4 z-20 flex w-40 flex-col gap-2 sm:w-56"
+        }
+      >
+        {narrow && (
+          <div className="sticky top-0 z-10 -mx-3 flex items-center justify-between border-b border-indigo-400/20 bg-[#0b1035]/95 px-3 pb-2 backdrop-blur-sm">
+            <span className="hud-label">{t.controlPanel}</span>
+            <button
+              onClick={() => setPanelOpen(false)}
+              aria-label={t.closeLbl}
+              title={t.closeLbl}
+              className="flex h-9 w-9 items-center justify-center border border-indigo-400/40 bg-[#10163a] text-indigo-200"
+            >
+              <CloseIcon />
+            </button>
           </div>
         )}
-      </div>
-
-      {/* ------------------------ audio + camera column ------------------------ */}
-      <aside className="absolute bottom-4 right-4 z-20 flex w-40 flex-col gap-2 sm:w-56">
+        {narrow && <div className="cam-panel">{guideRows}</div>}
         {/* audio controls — Web Audio only, no files */}
         <div className="cam-panel">
           <div className="flex items-center justify-between">
             <span className="hud-label">{t.audioPanel}</span>
             <span className="text-[9px] font-bold tabular-nums text-ion/90">
               {t.volumeLabel}: {faNum(Math.round(vol * 100), lang)}
-              {lang === "fa" ? "٪" : "%"}
+              {lang === "en" ? "%" : "٪"}
             </span>
           </div>
           <div className="mt-1.5 flex items-center gap-1">
@@ -958,7 +1522,7 @@ export default function App() {
                   <span>{dbg.labels[i] ?? `Class ${i + 1}`}</span>
                   <span className={p >= POSE_THRESHOLD ? "font-bold text-ion" : ""}>
                     {faNum(Math.round(p * 100), lang)}
-                    {rtl ? "٪" : "%"}
+                    {lang === "en" ? "%" : "٪"}
                   </span>
                 </p>
               ))}
@@ -1010,8 +1574,9 @@ export default function App() {
 
       {/* ------------------------------ start screen ------------------------------ */}
       {phase === "menu" && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-[rgba(3,5,20,0.62)] p-4">
-          <div className="bracket-panel anim-rise w-full max-w-xl px-6 py-8 sm:px-10 sm:py-9">
+        <div className="modal-scroll absolute inset-0 z-30 overflow-y-auto bg-[rgba(3,5,20,0.62)]">
+          <div className="flex min-h-full items-center justify-center p-3 py-6 sm:p-4">
+          <div className="bracket-panel anim-rise w-full max-w-xl px-4 py-6 sm:px-10 sm:py-9">
             <span className="corner-b" />
             <div className="flex items-center gap-2">
               <span className="h-px flex-1 bg-gradient-to-r from-transparent to-ion/50" />
@@ -1020,17 +1585,7 @@ export default function App() {
             </div>
 
             <div className="mt-5 text-center">
-              <h2 className="font-display text-4xl font-black text-white glow-soft sm:text-5xl">
-                {rtl ? (
-                  <>
-                    خلبان <span className="text-ion glow-cyan">کیهان</span>
-                  </>
-                ) : (
-                  <>
-                    POSE<span className="text-ion glow-cyan">PILOT</span>
-                  </>
-                )}
-              </h2>
+              <h2 className="font-display text-3xl font-black text-white glow-soft sm:text-5xl">{titleNode}</h2>
               <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-indigo-200/90">
                 {t.descA}
                 <span className="text-star">{t.stars}</span>
@@ -1065,10 +1620,30 @@ export default function App() {
               {t.scoring}
             </p>
 
+            {bestScore > 0 && (
+              <p className="mt-4 text-center font-display text-[11px] font-bold text-star/90">
+                🏆 {t.bestScore}: {faNum(bestScore, lang)}
+              </p>
+            )}
+
             <div className="mt-6 flex flex-col items-center gap-3">
-              <button onClick={startGame} className="btn-primary anim-floaty px-12 py-3.5 text-base font-black">
+              <button onClick={startGame} className="btn-primary anim-floaty px-10 py-3.5 text-base font-black sm:px-12">
                 {t.startGame}
               </button>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  onClick={() => setModal("about")}
+                  className="btn-ghost flex min-h-10 items-center gap-2 px-4 py-2.5 text-[11px] font-bold sm:text-xs"
+                >
+                  {t.about}
+                </button>
+                <button
+                  onClick={() => setModal("guide")}
+                  className="btn-ghost flex min-h-10 items-center gap-2 px-4 py-2.5 text-[11px] font-bold sm:text-xs"
+                >
+                  {t.help}
+                </button>
+              </div>
               <p className="flex items-center gap-2 text-[10px] font-medium text-indigo-300/70">
                 <span
                   className={`inline-block h-1.5 w-1.5 rounded-full ${
@@ -1079,13 +1654,15 @@ export default function App() {
               </p>
             </div>
           </div>
+          </div>
         </div>
       )}
 
       {/* ------------------------------ game over ------------------------------ */}
       {phase === "over" && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-[rgba(3,5,20,0.6)] p-4">
-          <div className="bracket-panel anim-rise w-full max-w-md px-8 py-9 text-center">
+        <div className="modal-scroll absolute inset-0 z-30 overflow-y-auto bg-[rgba(3,5,20,0.6)]">
+          <div className="flex min-h-full items-center justify-center p-3 py-6 sm:p-4">
+          <div className="bracket-panel anim-rise w-full max-w-md px-5 py-7 text-center sm:px-8 sm:py-9">
             <span className="corner-b" />
             <p className={`font-display text-[10px] font-bold text-alert ${rtl ? "" : "tracking-[0.34em]"}`}>
               {t.hullBreach}
@@ -1097,18 +1674,25 @@ export default function App() {
               {t.gameOver}
             </h2>
 
-            <div className="mt-6 flex items-center justify-center gap-8">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-4 sm:gap-x-8">
               <div>
                 <p className="hud-label">{t.finalScore}</p>
-                <p className="mt-1 font-display text-4xl font-black tabular-nums text-star glow-gold">
+                <p className="mt-1 font-display text-3xl font-black tabular-nums text-star glow-gold sm:text-4xl">
                   {faNum(String(score).padStart(4, "0"), lang)}
                 </p>
               </div>
-              <div className="h-12 w-px bg-indigo-400/25" />
+              <div className="hidden h-12 w-px bg-indigo-400/25 sm:block" />
               <div>
                 <p className="hud-label">{t.starsCaught}</p>
-                <p className="mt-1 font-display text-4xl font-black tabular-nums text-ion glow-cyan">
+                <p className="mt-1 font-display text-3xl font-black tabular-nums text-ion glow-cyan sm:text-4xl">
                   {faNum(gsRef.current.collected, lang)}
+                </p>
+              </div>
+              <div className="hidden h-12 w-px bg-indigo-400/25 sm:block" />
+              <div>
+                <p className="hud-label">🏆 {t.bestScore}</p>
+                <p className="mt-1 font-display text-3xl font-black tabular-nums text-nebula drop-shadow-[0_0_14px_rgba(124,92,255,0.55)] sm:text-4xl">
+                  {faNum(Math.max(bestScore, score), lang)}
                 </p>
               </div>
             </div>
@@ -1140,7 +1724,103 @@ export default function App() {
               {t.relaunchC}
             </p>
           </div>
+          </div>
         </div>
+      )}
+
+      {/* ------------------------------ about the creator ------------------------------ */}
+      {modal === "about" && (
+        <Modal title={t.about} closeLabel={t.closeLbl} rtl={rtl} onClose={() => setModal(null)}>
+          <div className="mt-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center border border-ion/40 bg-ion/10 text-2xl shadow-[0_0_18px_rgba(94,234,255,0.2)]">
+                👨‍💻
+              </span>
+              <p className="text-sm font-semibold leading-relaxed text-indigo-100/90">{t.aboutP1}</p>
+            </div>
+
+            <div className="border border-star/30 bg-star/5 px-4 py-3">
+              <p className="text-sm leading-relaxed text-indigo-100/90">
+                {t.creatorLineA}{" "}
+                <b className="font-display text-base text-star glow-gold">{t.creatorName}</b> {t.creatorLineB}
+              </p>
+            </div>
+
+            <div className="border border-indigo-400/25 bg-[#0d1340]/70 px-4 py-3">
+              <p className="text-sm text-indigo-100/90">
+                <span className="hud-label">{t.instructorLbl}</span>{" "}
+                <b className="font-display text-base text-ion">{t.instructorName}</b>
+              </p>
+              <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-indigo-100/90">
+                <span className="hud-label">{t.contactLbl}</span>
+                <a
+                  href={`tel:${PHONE}`}
+                  dir="ltr"
+                  className="font-display text-lg font-bold tracking-wider text-ion underline-offset-4 hover:underline"
+                >
+                  {PHONE}
+                </a>
+              </p>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ------------------------------ game guide & help ------------------------------ */}
+      {modal === "guide" && (
+        <Modal title={t.help} closeLabel={t.closeLbl} rtl={rtl} onClose={() => setModal(null)}>
+          <div className="mt-4 space-y-5">
+            <section>
+              <h4 className="guide-h">{gc.objectiveT}</h4>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-indigo-100/85">{gc.objectiveB}</p>
+            </section>
+
+            <section>
+              <h4 className="guide-h">{gc.howT}</h4>
+              <ol className="mt-2 space-y-2">
+                {gc.how.map((s, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-indigo-100/85">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border border-ion/50 bg-ion/10 font-display text-[10px] font-bold text-ion">
+                      {faNum(i + 1, lang)}
+                    </span>
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+
+            <section>
+              <h4 className="guide-h">{gc.flowT}</h4>
+              <ol className="mt-2 space-y-2">
+                {gc.flow.map((s, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-indigo-100/85">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border border-star/50 bg-star/10 font-display text-[10px] font-bold text-star">
+                      {faNum(i + 1, lang)}
+                    </span>
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+
+            <section>
+              <h4 className="guide-h">{gc.resultT}</h4>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-indigo-100/85">{gc.resultB}</p>
+            </section>
+
+            <section className="border border-indigo-400/20 bg-[#0d1340]/60 px-4 py-3">
+              <h4 className="guide-h">{gc.tipsT}</h4>
+              <ul className="mt-2 space-y-1.5">
+                {gc.tips.map((s, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-indigo-100/85">
+                    <span className="mt-0.5 text-star">✦</span>
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
+        </Modal>
       )}
     </div>
   );
