@@ -195,6 +195,27 @@ body {
   color: #eafcff;
   transform: translateY(-1px);
 }
+.btn-gold {
+  font-family: var(--font-display);
+  color: #ffd75e;
+  border: 1px solid rgba(255, 215, 94, 0.45);
+  background: rgba(46, 36, 10, 0.55);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s ease,
+    box-shadow 0.2s ease;
+}
+.btn-gold:hover {
+  background: rgba(255, 215, 94, 0.16);
+  color: #fff3c4;
+  transform: translateY(-1px);
+  box-shadow: 0 0 22px rgba(255, 215, 94, 0.28);
+}
+.btn-gold:active {
+  transform: translateY(1px) scale(0.99);
+}
 
 /* ---------- Camera preview ---------- */
 .cam-frame {
@@ -243,6 +264,20 @@ body {
     background-position: 0 6px;
   }
 }
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.anim-pop-in {
+  animation: pop-in 0.18s ease-out both;
+}
+
 @keyframes rise-in {
   from {
     opacity: 0;
