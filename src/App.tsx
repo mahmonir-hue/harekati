@@ -90,6 +90,10 @@ interface Strings {
   relaunchA: string;
   relaunchB: string;
   relaunchC: string;
+  publish: string;
+  publishCopied: string;
+  publishShared: string;
+  publishFailed: string;
 }
 
 const T: Record<Lang, Strings> = {
@@ -150,6 +154,10 @@ const T: Record<Lang, Strings> = {
     relaunchA: "برای پرواز دوباره",
     relaunchB: "یا",
     relaunchC: "را بزن",
+    publish: "انتشار امتیاز",
+    publishCopied: "کپی شد!",
+    publishShared: "به‌اشتراک گذاشته شد",
+    publishFailed: "کپی ناموفق بود",
   },
   en: {
     tagline: "body-controlled space run",
@@ -208,6 +216,10 @@ const T: Record<Lang, Strings> = {
     relaunchA: "PRESS",
     relaunchB: "OR",
     relaunchC: "TO RELAUNCH",
+    publish: "Publish Score",
+    publishCopied: "Copied!",
+    publishShared: "Shared",
+    publishFailed: "Copy failed",
   },
 };
 
@@ -270,6 +282,25 @@ function RestartIcon() {
   );
 }
 
+function ShareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.1" aria-hidden>
+      <circle cx="6" cy="12" r="2.6" />
+      <circle cx="17.5" cy="5.5" r="2.6" />
+      <circle cx="17.5" cy="18.5" r="2.6" />
+      <path d="M8.4 10.8l6.8-4M8.4 13.2l6.8 4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="anim-pop-in h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden>
+      <path d="M4.5 12.5l5 5L19.5 7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function CameraIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden>
@@ -324,6 +355,8 @@ export default function App() {
   const [guideOpen, setGuideOpen] = useState<boolean>(
     () => typeof window !== "undefined" && window.innerWidth >= 640
   );
+  const [publishState, setPublishState] = useState<"idle" | "copied" | "shared" | "failed">("idle");
+  const publishTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const t = T[lang];
   const rtl = lang === "fa";
@@ -358,6 +391,60 @@ export default function App() {
     }
     if (previewRef.current) await pc.turnOn(previewRef.current);
   }, []);
+
+  /** Publish the run result: native share sheet, then clipboard, then legacy copy. */
+  const publishScore = useCallback(async () => {
+    const gs = gsRef.current;
+    const url = `${window.location.origin}${window.location.pathname}`;
+    const msg =
+      lang === "fa"
+        ? `در بازی «خلبان کیهان» ${faNum(score, "fa")} امتیاز گرفتم و ${faNum(gs.collected, "fa")} ستاره گرفتم! 🚀`
+        : `I scored ${score} points and caught ${gs.collected} stars in Pose Pilot! 🚀`;
+    const fullText = `${msg}\n${url}`;
+
+    const done = (s: "copied" | "shared" | "failed") => {
+      setPublishState(s);
+      if (publishTimer.current) clearTimeout(publishTimer.current);
+      publishTimer.current = setTimeout(() => setPublishState("idle"), 2400);
+    };
+
+    const legacyCopy = () => {
+      const ta = document.createElement("textarea");
+      ta.value = fullText;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try {
+        ok = document.execCommand("copy");
+      } catch {
+        ok = false;
+      }
+      document.body.removeChild(ta);
+      done(ok ? "copied" : "failed");
+    };
+
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: "خلبان کیهان | Pose Pilot", text: msg, url });
+        done("shared");
+        return;
+      } catch (err) {
+        if ((err as Error)?.name === "AbortError") return; // user dismissed the sheet
+      }
+    }
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(fullText);
+        done("copied");
+        return;
+      }
+    } catch {
+      /* fall through to legacy copy */
+    }
+    legacyCopy();
+  }, [lang, score]);
 
   /* ------------------ language: dir, lang attr, storage ------------------ */
   useEffect(() => {
@@ -879,9 +966,28 @@ export default function App() {
               </div>
             </div>
 
-            <button onClick={restart} className="btn-primary mt-8 px-12 py-3.5 text-base font-black">
-              {t.restart}
-            </button>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <button onClick={restart} className="btn-primary px-10 py-3.5 text-base font-black">
+                {t.restart}
+              </button>
+              <button
+                onClick={() => void publishScore()}
+                className={`btn-gold flex items-center gap-2 px-6 py-3.5 text-sm font-black ${
+                  publishState === "copied" || publishState === "shared" ? "text-emerald-300" : ""
+                }`}
+              >
+                {publishState === "copied" || publishState === "shared" ? <CheckIcon /> : <ShareIcon />}
+                <span className={publishState === "failed" ? "text-alert" : ""}>
+                  {publishState === "copied"
+                    ? t.publishCopied
+                    : publishState === "shared"
+                      ? t.publishShared
+                      : publishState === "failed"
+                        ? t.publishFailed
+                        : t.publish}
+                </span>
+              </button>
+            </div>
             <p className="mt-3 text-[10px] font-medium text-indigo-300/70">
               {t.relaunchA} <span className="kbd mx-1">SPACE</span> {t.relaunchB} <span className="kbd mx-1">R</span>{" "}
               {t.relaunchC}
