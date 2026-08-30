@@ -3,12 +3,11 @@
 
    API reference (official sample):
      const model = await tmPose.load(URL + "model.json");
-     const webcam = new tmPose.Webcam(width, height, flip);
-     await webcam.setup(); await webcam.play();
-     webcam.update();
-     const { pose, posenetOutput } = await webcam.estimatePose(webcam.canvas);
+     // -> also fetches URL + "metadata.json" internally
+     const { posenetOutput } = await model.estimatePose(videoElement);
      const predictions = await model.predict(posenetOutput);
      // -> Array<{ className: string; probability: number }>  (may be sorted)
+     model.getClassLabels() -> string[]  (e.g. ["Class 1", ..., "Class 4"])
 */
 
 export interface TmPosePrediction {
@@ -18,25 +17,17 @@ export interface TmPosePrediction {
 
 export interface TmPoseModel {
   predict(posenetOutput: unknown): Promise<TmPosePrediction[]>;
-  metadata?: { labels?: string[] };
-}
-
-export interface TmPoseWebcam {
-  canvas: HTMLCanvasElement;
-  setup(): Promise<void>;
-  play(): Promise<void>;
-  stop(): void;
-  update(): void;
   estimatePose(
-    source: HTMLCanvasElement | HTMLVideoElement | HTMLImageElement
+    source: HTMLVideoElement | HTMLCanvasElement | HTMLImageElement
   ): Promise<{ pose: unknown; posenetOutput: unknown }>;
+  getClassLabels(): string[];
+  metadata?: { labels?: string[] };
 }
 
 declare global {
   interface Window {
     tmPose: {
       load(url: string): Promise<TmPoseModel>;
-      Webcam: new (width: number, height: number, flip?: boolean) => TmPoseWebcam;
     };
   }
   const tmPose: Window["tmPose"];

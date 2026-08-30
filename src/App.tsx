@@ -49,9 +49,12 @@ interface Strings {
   camOn: string;
   camStarting: string;
   camDenied: string;
+  camInsecure: string;
+  camError: string;
   modelReady: string;
   modelLoading: string;
   modelError: string;
+  modelIdle: string;
   detected: string;
   confidence: string;
   scanning: string;
@@ -93,10 +96,13 @@ const T: Record<Lang, Strings> = {
     camOff: "دوربین خاموش است",
     camOn: "دوربین روشن است",
     camStarting: "در حال روشن کردن دوربین...",
-    camDenied: "اجازه دسترسی به دوربین داده نشد",
+    camDenied: "اجازه دسترسی به دوربین داده نشده است. لطفاً دسترسی دوربین را در تنظیمات مرورگر فعال کنید.",
+    camInsecure: "وبکم نیاز به HTTPS یا localhost دارد.",
+    camError: "خطای دوربین — جزئیات در کنسول مرورگر ثبت شد.",
     modelReady: "مدل حرکتی آماده است",
     modelLoading: "در حال بارگیری مدل حرکتی...",
     modelError: "خطا در مدل حرکتی — کنترل با کیبورد فعال است",
+    modelIdle: "مدل حرکتی پس از روشن شدن دوربین بارگیری می‌شود.",
     detected: "حرکت تشخیص داده‌شده",
     confidence: "میزان اطمینان",
     scanning: "در حال جست‌وجوی ژست...",
@@ -136,10 +142,13 @@ const T: Record<Lang, Strings> = {
     camOff: "Camera Off",
     camOn: "Camera On",
     camStarting: "Starting Camera...",
-    camDenied: "Camera Permission Denied",
+    camDenied: "Camera permission denied. Please allow camera access in browser settings.",
+    camInsecure: "Webcam requires HTTPS or localhost.",
+    camError: "Camera error — details logged to browser console.",
     modelReady: "Pose Model Ready",
     modelLoading: "Loading motion model...",
     modelError: "Motion model error — keyboard controls active",
+    modelIdle: "Pose model loads after the camera is turned on.",
     detected: "Detected Pose",
     confidence: "Confidence",
     scanning: "Scanning for poses...",
@@ -268,7 +277,7 @@ export default function App() {
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [shieldOn, setShieldOn] = useState(false);
-  const [modelStatus, setModelStatus] = useState<ModelStatus>("loading");
+  const [modelStatus, setModelStatus] = useState<ModelStatus>("idle");
   const [camStatus, setCamStatus] = useState<CameraStatus>("off");
   const [det, setDet] = useState<Detection>({ index: -1, name: "", conf: 0, locked: false });
   const [lang, setLang] = useState<Lang>(initialLang);
@@ -340,7 +349,8 @@ export default function App() {
     fit();
     window.addEventListener("resize", fit);
 
-    // Pose controller: model preloads now (no camera), webcam waits for the button
+    // Pose controller: webcam permission is requested ONLY on button click;
+    // the TM model is loaded only after the webcam video is ready.
     const pc = new PoseController({
       onModelStatus: (s) => setModelStatus(s),
       onCameraStatus: (s) => setCamStatus(s),
@@ -355,7 +365,6 @@ export default function App() {
       },
     });
     poseRef.current = pc;
-    void pc.init();
 
     // Keyboard fallback (always works, even with the camera off)
     const onKey = (down: boolean) => (e: KeyboardEvent) => {
@@ -453,10 +462,20 @@ export default function App() {
         ? t.camStarting
         : camStatus === "denied"
           ? t.camDenied
-          : t.camOn;
+          : camStatus === "insecure"
+            ? t.camInsecure
+            : camStatus === "error"
+              ? t.camError
+              : t.camOn;
 
   const modelLine =
-    modelStatus === "loading" ? t.modelLoading : modelStatus === "error" ? t.modelError : t.modelReady;
+    modelStatus === "idle"
+      ? t.modelIdle
+      : modelStatus === "loading"
+        ? t.modelLoading
+        : modelStatus === "error"
+          ? t.modelError
+          : t.modelReady;
 
   const detLine = det.locked && det.index >= 0 ? `${t.detected}: ${det.name}` : t.scanning;
   const confPct = Math.round(det.conf * 100);
@@ -467,7 +486,7 @@ export default function App() {
       ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]"
       : camStatus === "starting"
         ? "bg-star anim-pulse-glow"
-        : camStatus === "denied"
+        : camStatus === "denied" || camStatus === "insecure" || camStatus === "error"
           ? "bg-alert shadow-[0_0_8px_rgba(255,93,115,0.8)]"
           : "bg-slate-600";
 
@@ -590,9 +609,11 @@ export default function App() {
                     ...
                   </span>
                 ) : (
-                  <svg viewBox="0 0 24 24" className={`h-8 w-8 ${camStatus === "denied" ? "text-slate-600" : "text-slate-700"}`} fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <svg viewBox="0 0 24 24" className={`h-8 w-8 ${camStatus === "off" ? "text-slate-700" : "text-slate-600"}`} fill="none" stroke="currentColor" strokeWidth="1.6">
                     <path d="M2 8l4-3h12a2 2 0 0 1 2 2v2l2-1v8l-2-1v2a2 2 0 0 1-2 2H6l-4-3V8z" strokeLinejoin="round" />
-                    {camStatus === "denied" && <path d="M4 4l16 16" strokeLinecap="round" />}
+                    {(camStatus === "denied" || camStatus === "insecure" || camStatus === "error") && (
+                      <path d="M4 4l16 16" strokeLinecap="round" />
+                    )}
                   </svg>
                 )}
               </div>
@@ -601,7 +622,7 @@ export default function App() {
 
           <div className="min-h-[3.6rem]">
             <p className="font-display text-[10px] font-bold text-indigo-100">{camLine}</p>
-            {camStatus === "on" ? (
+            {camStatus === "on" && modelStatus === "ready" ? (
               <>
                 <p className="mt-0.5 text-[10px] font-bold leading-snug text-ion">{detLine}</p>
                 <p className="text-[10px] font-medium text-indigo-300/85">

@@ -212,6 +212,9 @@ body {
   display: block;
   transform: none;
 }
+.cam-frame video {
+  transform: scaleX(-1); /* mirrored, like a selfie preview */
+}
 
 /* ---------- Animations ---------- */
 @keyframes floaty {
