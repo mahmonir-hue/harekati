@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Orbitron", "Space Grotesk", sans-serif;
-  --font-body: "Space Grotesk", sans-serif;
+  --font-display: "Lalezar", "Vazirmatn", sans-serif;
+  --font-body: "Vazirmatn", sans-serif;
   --color-void: #04061a;
   --color-hull: #0a0f2e;
   --color-nebula: #7c5cff;
@@ -42,10 +42,8 @@ body {
 }
 .hud-label {
   font-family: var(--font-body);
-  font-size: 0.6rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
   color: rgba(165, 175, 235, 0.85);
 }
 .hud-chip--active {
@@ -157,8 +155,6 @@ body {
 /* ---------- Buttons ---------- */
 .btn-primary {
   font-family: var(--font-display);
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
   color: #03121c;
   background: linear-gradient(180deg, #8df2ff, #35cbe8);
   border: 1px solid rgba(190, 250, 255, 0.9);
@@ -185,8 +181,6 @@ body {
 }
 .btn-ghost {
   font-family: var(--font-display);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
   color: #bcd0ff;
   border: 1px solid rgba(140, 150, 255, 0.4);
   background: rgba(16, 22, 58, 0.7);

@@ -20,6 +20,11 @@ interface Detection {
   locked: boolean;
 }
 
+/* ------------------------- Persian digits helper ------------------------- */
+
+const FA_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
+const toFa = (value: number | string) => String(value).replace(/\d/g, (d) => FA_DIGITS[Number(d)]);
+
 /* --------------------------- tiny SVG icons --------------------------- */
 
 function ShipIcon({ dim }: { dim?: boolean }) {
@@ -238,15 +243,15 @@ export default function App() {
   const statusLine = (() => {
     switch (poseStatus) {
       case "loading":
-        return "Loading motion model...";
+        return "در حال بارگیری مدل حرکتی...";
       case "denied":
-        return "Camera blocked — keyboard controls active";
+        return "دوربین مسدود شد — کنترل با کیبورد فعال است";
       case "error":
-        return "Motion model error — keyboard controls active";
+        return "خطا در مدل حرکتی — کنترل با کیبورد فعال است";
       case "ready":
-        return det.locked && det.index >= 0 ? `Detected: Class ${det.index + 1}` : "Scanning for poses...";
+        return det.locked && det.index >= 0 ? `شناسایی‌شده: کلاس ${toFa(det.index + 1)}` : "در حال جست‌وجوی ژست...";
       default:
-        return "Camera standby — press Start";
+        return "دوربین در انتظار — بازی را شروع کن";
     }
   })();
 
@@ -264,24 +269,22 @@ export default function App() {
       {/* ------------------------------ top HUD ------------------------------ */}
       <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 p-4 sm:p-5">
         <div className="anim-rise">
-          <h1 className="font-display text-base font-extrabold tracking-[0.32em] text-white sm:text-lg">
-            POSE<span className="text-ion glow-cyan">PILOT</span>
+          <h1 className="font-display text-2xl leading-none text-white sm:text-[1.7rem]">
+            خلبان<span className="text-ion glow-cyan"> کیهان</span>
           </h1>
-          <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.26em] text-indigo-300/70">
-            body-controlled space run
-          </p>
+          <p className="mt-1 text-[11px] font-medium text-indigo-300/70">پرواز فضایی با کنترل بدن</p>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
           <div className="hud-chip">
-            <span className="hud-label">Score</span>
-            <span className="font-display text-lg font-bold tabular-nums leading-none text-star glow-gold sm:text-xl">
-              {String(score).padStart(4, "0")}
+            <span className="hud-label">امتیاز</span>
+            <span className="font-display text-xl leading-none text-star glow-gold sm:text-2xl">
+              {toFa(String(score).padStart(4, "0"))}
             </span>
           </div>
 
-          <div className="hud-chip" title="Lives">
-            <span className="hud-label">Lives</span>
+          <div className="hud-chip" title="جان‌ها">
+            <span className="hud-label">جان‌ها</span>
             <span className="flex items-center gap-1 text-ion">
               {[0, 1, 2].map((i) => (
                 <ShipIcon key={i} dim={i >= lives} />
@@ -289,18 +292,18 @@ export default function App() {
             </span>
           </div>
 
-          <div className={`hud-chip ${shieldOn ? "hud-chip--active" : ""}`} title="Shield">
+          <div className={`hud-chip ${shieldOn ? "hud-chip--active" : ""}`} title="سپر">
             <ShieldIcon on={shieldOn} />
-            <span className="hud-label">{shieldOn ? "Shield up" : "No shield"}</span>
+            <span className="hud-label">{shieldOn ? "سپر فعال" : "بدون سپر"}</span>
           </div>
 
           {phase !== "menu" && (
             <button
               onClick={restart}
-              className="btn-ghost pointer-events-auto flex items-center gap-2 px-3.5 py-2 text-[10px] font-bold"
+              className="btn-ghost pointer-events-auto flex items-center gap-2 px-3.5 py-1.5 text-sm"
             >
               <RestartIcon />
-              Restart
+              شروع دوباره
             </button>
           )}
         </div>
@@ -310,7 +313,7 @@ export default function App() {
       <aside className="absolute bottom-4 right-4 z-20 w-44 sm:w-52">
         <div className="cam-panel">
           <div className="flex items-center justify-between">
-            <span className="hud-label">Motion cam</span>
+            <span className="hud-label">دوربین حرکت</span>
             <span
               className={`h-2 w-2 rounded-full ${
                 poseStatus === "ready"
@@ -329,9 +332,7 @@ export default function App() {
             {poseStatus !== "ready" && (
               <div className="absolute inset-0 flex items-center justify-center p-2 text-center">
                 {poseStatus === "loading" ? (
-                  <span className="font-display text-[9px] font-bold tracking-[0.18em] text-indigo-300 anim-pulse-glow">
-                    LOADING MODEL
-                  </span>
+                  <span className="font-display text-xs text-indigo-300 anim-pulse-glow">در حال بارگیری مدل</span>
                 ) : poseStatus === "denied" ? (
                   <svg viewBox="0 0 24 24" className="h-8 w-8 text-slate-600" fill="none" stroke="currentColor" strokeWidth="1.6">
                     <path d="M2 7l4-3h12a2 2 0 0 1 2 2v3l2-1v8l-2-1v3a2 2 0 0 1-2 2H6l-4-3V7z" strokeLinejoin="round" />
@@ -346,11 +347,14 @@ export default function App() {
             )}
           </div>
 
-          <div className="min-h-[2.1rem]">
-            <p className="font-display text-[10px] font-bold tracking-[0.12em] text-indigo-100">{statusLine}</p>
+          <div className="min-h-[2.4rem]">
+            <p className="font-display text-[13px] leading-snug text-indigo-100">{statusLine}</p>
             {poseStatus === "ready" && (
-              <p className="mt-0.5 text-[10px] font-medium tracking-wide text-indigo-300/85">
-                Confidence: <span className={`tabular-nums ${det.locked ? "text-ion" : "text-indigo-300/85"}`}>{confPct}%</span>
+              <p className="mt-0.5 text-[11px] font-medium text-indigo-300/85">
+                اطمینان:{" "}
+                <span dir="ltr" className={`inline-block tabular-nums ${det.locked ? "text-ion" : "text-indigo-300/85"}`}>
+                  {toFa(confPct)}٪
+                </span>
               </p>
             )}
           </div>
@@ -361,7 +365,7 @@ export default function App() {
               return (
                 <span
                   key={i}
-                  className={`flex-1 py-1 text-center font-display text-[9px] font-bold tracking-widest transition-all duration-150 ${
+                  className={`flex-1 py-1 text-center font-display text-xs transition-all duration-150 ${
                     active
                       ? i === 2
                         ? "bg-ion/25 text-ion shadow-[0_0_10px_rgba(94,234,255,0.5)]"
@@ -371,7 +375,7 @@ export default function App() {
                       : "bg-[#111741] text-indigo-400/60"
                   }`}
                 >
-                  {i + 1}
+                  {toFa(i + 1)}
                 </span>
               );
             })}
@@ -384,37 +388,37 @@ export default function App() {
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-[rgba(3,5,20,0.62)] p-4">
           <div className="bracket-panel anim-rise w-full max-w-xl px-6 py-8 sm:px-10 sm:py-9">
             <span className="corner-b" />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <span className="h-px flex-1 bg-gradient-to-r from-transparent to-ion/50" />
-              <p className="font-display text-[9px] font-bold tracking-[0.3em] text-ion/80">
-                TEACHABLE MACHINE · POSE MODEL
+              <p className="font-display text-xs text-ion/80">
+                مدل ژست · <span dir="ltr">Teachable Machine</span>
               </p>
               <span className="h-px flex-1 bg-gradient-to-l from-transparent to-ion/50" />
             </div>
 
-            <div className="mt-5 text-center">
-              <h2 className="font-display text-4xl font-black tracking-[0.14em] text-white glow-soft sm:text-5xl">
-                POSE<span className="text-ion glow-cyan">PILOT</span>
+            <div className="mt-4 text-center">
+              <h2 className="font-display text-5xl leading-none text-white glow-soft sm:text-6xl">
+                خلبان<span className="text-ion glow-cyan"> کیهان</span>
               </h2>
-              <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-indigo-200/90">
-                Steer a tiny spaceship with your body. Catch falling <span className="text-star">stars</span>, dodge{" "}
-                <span className="text-ember">meteors</span>, survive the drift.
+              <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-indigo-200/90">
+                با حرکات بدن، سفینه‌ات را هدایت کن؛ <span className="text-star">ستاره‌های</span> در حال سقوط را بگیر، از{" "}
+                <span className="text-ember">شهاب‌سنگ‌ها</span> جاخالی بده و در دل فضا دوام بیاور.
               </p>
             </div>
 
             <div className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {[
-                { cls: "Class 1", act: "Lean left — move left", key: "◀", kbd: "←" },
-                { cls: "Class 2", act: "Lean right — move right", key: "▶", kbd: "→" },
-                { cls: "Class 3", act: "Shield pose — block one hit", key: "◈", kbd: "SPACE" },
-                { cls: "Class 4", act: "Boost pose — hop upward", key: "▲", kbd: "↑" },
+                { cls: "کلاس ۱", act: "خم شدن به چپ — حرکت به چپ", key: "◀", kbd: "←" },
+                { cls: "کلاس ۲", act: "خم شدن به راست — حرکت به راست", key: "▶", kbd: "→" },
+                { cls: "کلاس ۳", act: "ژست سپر — دفع یک ضربه", key: "◈", kbd: "اسپیس" },
+                { cls: "کلاس ۴", act: "ژست جهش — پرش به بالا", key: "▲", kbd: "↑" },
               ].map((r) => (
                 <div
                   key={r.cls}
                   className="group flex items-center justify-between gap-3 border border-indigo-400/15 bg-[#0d1340]/70 px-3.5 py-2.5 transition-colors duration-150 hover:border-ion/40 hover:bg-[#101a52]"
                 >
                   <div className="min-w-0">
-                    <p className="font-display text-[9px] font-bold tracking-[0.22em] text-ion/85">
+                    <p className="font-display text-sm text-ion/85">
                       {r.cls} <span className="text-indigo-400/60">· {r.key}</span>
                     </p>
                     <p className="mt-0.5 truncate text-xs font-medium text-indigo-100/90">{r.act}</p>
@@ -424,26 +428,29 @@ export default function App() {
               ))}
             </div>
 
-            <p className="mt-4 text-center text-[11px] font-medium tracking-wide text-indigo-300/75">
-              <span className="text-star">★ +10 points</span> per star · <span className="text-ember">meteor −1 life</span> · 3
-              lives · shield absorbs one hit
+            <p className="mt-4 text-center text-[12px] font-medium leading-6 text-indigo-300/75">
+              <span className="text-star">★ هر ستاره </span>
+              <span dir="ltr" className="text-star">+۱۰</span>
+              <span className="text-star"> امتیاز</span> · <span className="text-ember">هر شهاب‌سنگ </span>
+              <span dir="ltr" className="text-ember">−۱</span>
+              <span className="text-ember"> جان</span> · ۳ جان · سپر یک ضربه را دفع می‌کند
             </p>
 
             <div className="mt-6 flex flex-col items-center gap-3">
-              <button onClick={() => void startGame()} className="btn-primary anim-floaty px-12 py-3.5 text-sm font-black">
-                Start Game
+              <button onClick={() => void startGame()} className="btn-primary anim-floaty px-14 py-3 text-xl">
+                شروع بازی
               </button>
-              <p className="flex items-center gap-2 text-[10px] font-medium tracking-[0.14em] text-indigo-300/70">
+              <p className="flex items-center gap-2 text-[11px] font-medium text-indigo-300/70">
                 <span
                   className={`inline-block h-1.5 w-1.5 rounded-full ${
                     poseStatus === "loading" ? "bg-star anim-pulse-glow" : poseStatus === "error" ? "bg-alert" : "bg-ion"
                   }`}
                 />
                 {poseStatus === "loading"
-                  ? "LOADING MOTION MODEL..."
+                  ? "در حال بارگیری مدل حرکتی..."
                   : poseStatus === "error"
-                    ? "MODEL UNAVAILABLE — KEYBOARD CONTROLS READY"
-                    : "CAMERA ASKS PERMISSION ONLY AFTER START"}
+                    ? "مدل در دسترس نیست — کنترل با کیبورد آماده است"
+                    : "دوربین فقط پس از زدن «شروع بازی» اجازه می‌خواهد"}
               </p>
             </div>
           </div>
@@ -455,30 +462,31 @@ export default function App() {
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-[rgba(3,5,20,0.6)] p-4">
           <div className="bracket-panel anim-rise w-full max-w-md px-8 py-9 text-center">
             <span className="corner-b" />
-            <p className="font-display text-[10px] font-bold tracking-[0.34em] text-alert">HULL BREACH</p>
-            <h2 className="mt-2 font-display text-4xl font-black tracking-[0.12em] text-white" style={{ textShadow: "0 0 26px rgba(255,93,115,0.45)" }}>
-              SIGNAL LOST
+            <p className="font-display text-sm text-alert">آسیب کامل به بدنه</p>
+            <h2
+              className="mt-1 font-display text-5xl leading-none text-white"
+              style={{ textShadow: "0 0 26px rgba(255,93,115,0.45)" }}
+            >
+              پایان مأموریت
             </h2>
 
-            <div className="mt-6 flex items-center justify-center gap-8">
+            <div className="mt-7 flex items-center justify-center gap-8">
               <div>
-                <p className="hud-label">Final score</p>
-                <p className="mt-1 font-display text-4xl font-black tabular-nums text-star glow-gold">
-                  {String(score).padStart(4, "0")}
-                </p>
+                <p className="hud-label">امتیاز نهایی</p>
+                <p className="mt-1 font-display text-5xl text-star glow-gold">{toFa(String(score).padStart(4, "0"))}</p>
               </div>
               <div className="h-12 w-px bg-indigo-400/25" />
               <div>
-                <p className="hud-label">Stars caught</p>
-                <p className="mt-1 font-display text-4xl font-black tabular-nums text-ion glow-cyan">{gsRef.current.collected}</p>
+                <p className="hud-label">ستاره‌های گرفته‌شده</p>
+                <p className="mt-1 font-display text-5xl text-ion glow-cyan">{toFa(gsRef.current.collected)}</p>
               </div>
             </div>
 
-            <button onClick={restart} className="btn-primary mt-8 px-12 py-3.5 text-sm font-black">
-              Restart
+            <button onClick={restart} className="btn-primary mt-8 px-14 py-3 text-xl">
+              شروع دوباره
             </button>
-            <p className="mt-3 text-[10px] font-medium tracking-[0.2em] text-indigo-300/70">
-              PRESS <span className="kbd mx-1">SPACE</span> OR <span className="kbd mx-1">R</span> TO RELAUNCH
+            <p className="mt-3 text-[11px] font-medium text-indigo-300/70">
+              برای پرواز دوباره <span className="kbd mx-1">اسپیس</span> یا <span className="kbd mx-1">R</span> را بزن
             </p>
           </div>
         </div>
