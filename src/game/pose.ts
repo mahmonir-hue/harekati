@@ -1,34 +1,31 @@
 /* ------------------------------------------------------------------ */
-/*  Teachable Machine pose controller                                  */
+/*  Teachable Machine pose controller — direct getUserMedia pipeline  */
 /*  Model: https://teachablemachine.withgoogle.com/models/g5GrIpxSy/   */
 /*                                                                     */
 /*  Class 1 = move LEFT      Class 3 = SHIELD                          */
 /*  Class 2 = move RIGHT     Class 4 = BOOST                           */
 /*                                                                     */
-/*  Pipeline (matches the official TM Pose sample):                    */
-/*    tmPose.load(model.json)  ->  model (metadata carries labels)     */
-/*    new tmPose.Webcam() -> setup() -> play()                         */
-/*    loop: webcam.update() -> estimatePose() -> model.predict()       */
-/*          -> Array<{ className, probability }>                       */
+/*  Flow (strict order):                                               */
+/*    button click -> getUserMedia -> video.play() -> metadata ready   */
+/*    -> load model.json + metadata.json -> start prediction loop      */
 /* ------------------------------------------------------------------ */
 
-import type { TmPoseModel, TmPosePrediction, TmPoseWebcam } from "../tm-pose";
+import type { TmPoseModel, TmPosePrediction } from "../tm-pose";
 
 const MODEL_URL = "https://teachablemachine.withgoogle.com/models/g5GrIpxSy/";
-const THRESHOLD = 0.7; // ~70% confidence band, per spec
-const HOLD_FLOOR = 0.55; // hysteresis: keep the current class above this
-const SMOOTHING = 0.5; // EMA weight for each new sample (light smoothing)
-const UI_INTERVAL = 100; // ms between HUD updates
-const SHIELD_COOLDOWN = 2000; // ms — one pose triggers one shield, no spam
+const THRESHOLD = 0.7; // ~70% confidence, per spec
+const HOLD_FLOOR = 0.55; // hysteresis floor while a class is already active
+const SMOOTHING = 0.5; // EMA weight for a new sample (light smoothing)
+const UI_INTERVAL = 120; // ms between on-screen detection updates
+const SHIELD_COOLDOWN = 2000; // ms — one pose = one action, no spam
 const BOOST_COOLDOWN = 800;
-const FALLBACK_NAMES = ["Class 1", "Class 2", "Class 3", "Class 4"];
 
-export type ModelStatus = "loading" | "ready" | "error";
-export type CameraStatus = "off" | "starting" | "on" | "denied";
+export type CameraStatus = "off" | "starting" | "on" | "denied" | "insecure" | "error";
+export type ModelStatus = "idle" | "loading" | "ready" | "error";
 
 export interface PoseHandlers {
-  onModelStatus: (status: ModelStatus) => void;
   onCameraStatus: (status: CameraStatus) => void;
+  onModelStatus: (status: ModelStatus) => void;
   /** topIndex = -1 when nothing crosses the threshold */
   onDetection: (topIndex: number, className: string, confidence: number, locked: boolean) => void;
   onMove: (dir: "left" | "right" | null) => void;
@@ -38,153 +35,263 @@ export interface PoseHandlers {
 export class PoseController {
   private h: PoseHandlers;
   private model: TmPoseModel | null = null;
-  private webcam: TmPoseWebcam | null = null;
+  private modelPromise: Promise<TmPoseModel | null> | null = null;
+  /** Class name -> action index (from model metadata, e.g. "Class 2" -> 1) */
+  private classIndex = new Map<string, number>();
+
+  private video: HTMLVideoElement | null = null;
+  private stream: MediaStream | null = null;
+  private host: HTMLElement | null = null;
   private raf = 0;
+  private running = false;
+  private turningOn = false; // guards rapid double-clicks: never two streams
+
   private smoothed = [0.25, 0.25, 0.25, 0.25];
   private active = -1;
   private lastShieldAt = -1e9;
   private lastBoostAt = -1e9;
   private lastUiAt = 0;
-  private errorStreak = 0;
-  private host: HTMLElement | null = null;
 
-  classNames: string[] = [...FALLBACK_NAMES];
   cameraStatus: CameraStatus = "off";
-  modelStatus: ModelStatus = "loading";
+  modelStatus: ModelStatus = "idle";
 
   constructor(handlers: PoseHandlers) {
     this.h = handlers;
   }
 
-  private setModelStatus(s: ModelStatus) {
-    this.modelStatus = s;
-    this.h.onModelStatus(s);
-  }
-
-  private setCameraStatus(s: CameraStatus) {
+  private setCamera(s: CameraStatus) {
     this.cameraStatus = s;
     this.h.onCameraStatus(s);
   }
 
-  /** Loads model.json + metadata.json. No webcam permission is requested here. */
-  async init(): Promise<boolean> {
-    if (this.model) return true;
-    this.setModelStatus("loading");
-    try {
-      this.model = await tmPose.load(MODEL_URL + "model.json");
-      const labels = this.model.metadata?.labels;
-      if (Array.isArray(labels) && labels.length === 4) {
-        this.classNames = labels.map(String);
-      }
-      this.setModelStatus("ready");
-      return true;
-    } catch (err) {
-      console.error("Failed to load pose model:", err);
-      this.model = null;
-      this.setModelStatus("error");
-      return false;
-    }
+  private setModel(s: ModelStatus) {
+    this.modelStatus = s;
+    this.h.onModelStatus(s);
   }
 
-  /** Map a prediction's className to a class index 0..3 (order-safe). */
-  private classIndex(name: string): number {
-    const byName = this.classNames.indexOf(name);
-    if (byName !== -1) return byName;
-    const m = /(\d+)/.exec(name ?? "");
-    if (m) return Math.min(3, Math.max(0, parseInt(m[1], 10) - 1));
-    return -1;
-  }
+  /* ------------------------- camera on (button) ------------------------- */
 
-  /** Requests webcam permission, starts the preview and the prediction loop. */
-  async turnOn(host: HTMLElement): Promise<void> {
-    if (this.cameraStatus === "on" || this.cameraStatus === "starting") return;
-    this.setCameraStatus("starting");
-    const modelOk = await this.init();
-    if (!modelOk) {
-      this.setCameraStatus("off");
+  /** Called ONLY from the "Turn Camera On" button. Requests permission here. */
+  async turnOn(host: HTMLElement) {
+    console.log("CAMERA: button clicked");
+    if (this.cameraStatus === "on" || this.cameraStatus === "starting" || this.turningOn) {
+      console.log("CAMERA: ignored (already on or starting)");
       return;
     }
+    this.turningOn = true;
+    this.host = host;
+    this.setCamera("starting");
+
     try {
-      if (!this.webcam) {
-        this.webcam = new tmPose.Webcam(220, 220, true);
-        await this.webcam.setup();
+      // 1) Secure context check: getUserMedia needs https:// or localhost
+      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+        console.error("CAMERA ERROR: insecure context — webcam requires HTTPS or localhost");
+        this.setCamera("insecure");
+        return;
       }
-      await this.webcam.play();
-      this.host = host;
-      host.replaceChildren(this.webcam.canvas);
-      // fresh smoothing state so the first pose registers quickly
-      this.smoothed = [0.25, 0.25, 0.25, 0.25];
-      this.active = -1;
-      this.errorStreak = 0;
-      this.setCameraStatus("on");
-      cancelAnimationFrame(this.raf);
-      this.raf = requestAnimationFrame(this.loop);
+
+      // 2) Ask for permission
+      console.log("CAMERA: requesting permission");
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      console.log("CAMERA: permission granted");
+      console.log("CAMERA: video stream received", stream);
+      this.stream = stream;
+
+      // 3) Attach the stream to a <video> element inside the preview panel
+      const video = this.video ?? document.createElement("video");
+      this.video = video;
+      video.muted = true; // allows autoplay in all browsers
+      video.setAttribute("playsinline", ""); // iOS
+      video.srcObject = stream;
+      if (video.parentElement !== host) {
+        host.innerHTML = "";
+        host.appendChild(video);
+      }
+
+      try {
+        await video.play();
+      } catch (playErr) {
+        console.warn("CAMERA: play() failed, retrying muted", playErr);
+        video.muted = true;
+        await video.play();
+      }
+
+      // 4) Wait until the video metadata is loaded
+      if (video.readyState < 1) {
+        await new Promise<void>((resolve) => {
+          const done = () => {
+            video.removeEventListener("loadedmetadata", done);
+            resolve();
+          };
+          video.addEventListener("loadedmetadata", done);
+        });
+      }
+      console.log("CAMERA: video ready");
+
+      this.setCamera("on");
+
+      // 5) NOW load the Teachable Machine model (only after webcam is ready)
+      const model = await this.ensureModel();
+
+      // 6) Start the prediction loop only after the model is loaded
+      //    (the loop self-skips frames until the video is fully ready)
+      if (model) this.startLoop();
     } catch (err) {
-      console.error("Webcam unavailable:", err);
-      this.setCameraStatus("denied");
+      const e = err as Error;
+      console.error(`CAMERA ERROR: ${e?.name}: ${e?.message}`);
+      this.stopStream();
+      this.setCamera(this.statusForError(e));
+    } finally {
+      this.turningOn = false;
     }
   }
 
-  /** Stops webcam tracks and the prediction loop. Keyboard keeps working. */
-  turnOff(): void {
+  /** Map browser MediaStream errors to the right UI status. */
+  private statusForError(e: Error): CameraStatus {
+    switch (e?.name) {
+      case "NotAllowedError":
+      case "PermissionDeniedError":
+        // "Camera permission denied. Please allow camera access in browser settings."
+        return "denied";
+      case "NotFoundError":
+      case "DevicesNotFoundError":
+      case "NotReadableError":
+      case "TrackStartError":
+      case "OverconstrainedError":
+      case "SecurityError":
+      default:
+        return "error";
+    }
+  }
+
+  /* --------------------------- camera off --------------------------- */
+
+  /** Stop all tracks, halt prediction, clear the preview. */
+  turnOff() {
+    console.log("CAMERA: turn off requested");
+    this.stopLoop();
+    this.stopStream();
+    if (this.video) {
+      this.video.srcObject = null;
+      this.video.remove();
+    }
+    this.setCamera("off");
+    console.log("CAMERA: turned off (tracks stopped)");
+  }
+
+  private stopStream() {
+    if (this.stream) {
+      for (const track of this.stream.getTracks()) track.stop();
+      this.stream = null;
+    }
+  }
+
+  /* ----------------------- Teachable Machine model ----------------------- */
+
+  /** Single-flight loader for model.json + metadata.json. */
+  private ensureModel(): Promise<TmPoseModel | null> {
+    if (this.model) return Promise.resolve(this.model);
+    if (!this.modelPromise) {
+      this.modelPromise = (async () => {
+        if (typeof tmPose === "undefined") {
+          console.error("TM ERROR: tmPose library not loaded (CDN blocked?)");
+          this.setModel("error");
+          return null;
+        }
+        this.setModel("loading");
+        console.log("TM: loading model.json + metadata.json from", MODEL_URL);
+        try {
+          const model = await tmPose.load(MODEL_URL + "model.json");
+          this.model = model;
+          // Build the class-name map from metadata: "Class 1" -> 0 ... "Class 4" -> 3
+          const labels = model.getClassLabels?.() ?? [];
+          this.classIndex.clear();
+          labels.forEach((label, i) => this.classIndex.set(label, i));
+          console.log("TM: model ready — classes:", labels);
+          this.setModel("ready");
+          return model;
+        } catch (err) {
+          const e = err as Error;
+          console.error(`TM ERROR: ${e?.name}: ${e?.message}`);
+          this.setModel("error");
+          return null;
+        }
+      })();
+    }
+    return this.modelPromise;
+  }
+
+  /* -------------------------- prediction loop -------------------------- */
+
+  private startLoop() {
+    if (this.running) return;
+    this.running = true;
+    console.log("POSE: prediction loop started");
+    this.raf = requestAnimationFrame(this.loop);
+  }
+
+  private stopLoop() {
+    if (!this.running) return;
+    this.running = false;
     cancelAnimationFrame(this.raf);
-    this.raf = 0;
+    console.log("POSE: prediction loop stopped");
     this.active = -1;
     this.h.onMove(null);
-    this.h.onDetection(-1, "", 0, false);
-    try {
-      this.webcam?.stop();
-    } catch {
-      /* noop */
-    }
-    if (this.host) this.host.replaceChildren();
-    this.setCameraStatus("off");
   }
 
   private loop = async () => {
-    if (this.cameraStatus !== "on" || !this.webcam || !this.model) return;
+    if (!this.running) return;
     this.raf = requestAnimationFrame(this.loop);
+    const video = this.video;
+    if (!this.model || !video) return;
+    if (video.readyState < 2) return; // skip until frames are actually available
+
     try {
-      this.webcam.update();
-      const { posenetOutput } = await this.webcam.estimatePose(this.webcam.canvas);
-      // predict() resolves to Array<{ className, probability }> directly
+      const { posenetOutput } = await this.model.estimatePose(video);
       const predictions: TmPosePrediction[] = await this.model.predict(posenetOutput);
-      this.errorStreak = 0;
 
+      // probabilities indexed by the controller's class order (0..3)
       const probs = [0, 0, 0, 0];
+      let topName = "";
+      let topP = -1;
       for (const p of predictions) {
-        const idx = this.classIndex(p.className);
-        if (idx >= 0 && idx < 4) probs[idx] = p.probability ?? 0;
+        const idx = this.classIndex.get(p.className) ?? -1;
+        if (idx >= 0) probs[idx] = p.probability;
+        if (p.probability > topP) {
+          topP = p.probability;
+          topName = p.className;
+        }
       }
+      if (topP < 0) return;
 
-      // light EMA smoothing so quick prediction flips don't shake the ship
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < this.smoothed.length; i++) {
         this.smoothed[i] += (probs[i] - this.smoothed[i]) * SMOOTHING;
       }
 
-      let top = -1;
-      let topP = 0;
-      for (let i = 0; i < 4; i++) {
-        if (this.smoothed[i] > topP) {
-          topP = this.smoothed[i];
-          top = i;
+      let best = -1;
+      let bestP = 0;
+      for (let i = 0; i < this.smoothed.length; i++) {
+        if (this.smoothed[i] > bestP) {
+          bestP = this.smoothed[i];
+          best = i;
         }
       }
 
-      // threshold with a little hysteresis: a clear pose locks in quickly,
-      // and stays locked until confidence clearly drops (no flicker)
+      // threshold + light hysteresis: a clear pose locks in within ~2 frames,
+      // quick prediction flips don't shake the ship
       let idx = -1;
-      if (top >= 0 && topP >= THRESHOLD) idx = top;
+      if (best >= 0 && bestP >= THRESHOLD) idx = best;
       else if (this.active >= 0 && this.smoothed[this.active] >= HOLD_FLOOR) idx = this.active;
 
-      // edge-triggered actions with cooldowns — one pose = one trigger
       const now = performance.now();
       if (idx === 2 && this.active !== 2 && now - this.lastShieldAt > SHIELD_COOLDOWN) {
         this.lastShieldAt = now;
+        console.log("POSE: Class 3 -> SHIELD");
         this.h.onAction("shield");
       }
       if (idx === 3 && this.active !== 3 && now - this.lastBoostAt > BOOST_COOLDOWN) {
         this.lastBoostAt = now;
+        console.log("POSE: Class 4 -> BOOST");
         this.h.onAction("boost");
       }
 
@@ -193,20 +300,20 @@ export class PoseController {
 
       if (now - this.lastUiAt > UI_INTERVAL) {
         this.lastUiAt = now;
-        this.h.onDetection(top, top >= 0 ? this.classNames[top] ?? "" : "", topP, idx !== -1);
+        this.h.onDetection(best, topName, topP, idx !== -1);
       }
     } catch (err) {
-      this.errorStreak += 1;
-      if (this.errorStreak === 25) {
-        console.error("Pose prediction error:", err);
-        this.setModelStatus("error");
-      }
+      const e = err as Error;
+      console.error(`POSE ERROR: ${e?.name}: ${e?.message}`);
     }
   };
 
-  dispose(): void {
+  /* ------------------------------ cleanup ------------------------------ */
+
+  dispose() {
     this.turnOff();
-    this.webcam = null;
+    this.model = null;
+    this.modelPromise = null;
     this.host = null;
   }
 }
