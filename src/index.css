@@ -195,6 +195,37 @@ body {
   color: #eafcff;
   transform: translateY(-1px);
 }
+
+.audio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  flex: 1 1 0;
+  color: #bcd0ff;
+  border: 1px solid rgba(140, 150, 255, 0.35);
+  background: rgba(16, 22, 58, 0.7);
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.2s ease,
+    transform 0.12s ease;
+}
+.audio-btn:hover {
+  background: rgba(94, 234, 255, 0.16);
+  color: #eafcff;
+}
+.audio-btn:active {
+  transform: scale(0.93);
+}
+.audio-btn--active {
+  color: #8df2ff;
+  border-color: rgba(94, 234, 255, 0.7);
+  background: rgba(94, 234, 255, 0.18);
+  box-shadow: 0 0 12px rgba(94, 234, 255, 0.35);
+}
 .btn-gold {
   font-family: var(--font-display);
   color: #ffd75e;

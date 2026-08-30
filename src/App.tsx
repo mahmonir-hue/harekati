@@ -10,6 +10,7 @@ import {
   updateAmbient,
   type GameState,
 } from "./game/engine";
+import { audio, type AudioState } from "./game/audio";
 import { PoseController, POSE_THRESHOLD, type CameraStatus, type DebugInfo, type ModelStatus } from "./game/pose";
 
 type Phase = "menu" | "playing" | "over";
@@ -94,6 +95,13 @@ interface Strings {
   publishCopied: string;
   publishShared: string;
   publishFailed: string;
+  audioPanel: string;
+  play: string;
+  pause: string;
+  stop: string;
+  volumeDown: string;
+  volumeUp: string;
+  volumeLabel: string;
 }
 
 const T: Record<Lang, Strings> = {
@@ -158,6 +166,13 @@ const T: Record<Lang, Strings> = {
     publishCopied: "کپی شد!",
     publishShared: "به‌اشتراک گذاشته شد",
     publishFailed: "کپی ناموفق بود",
+    audioPanel: "صدا",
+    play: "پخش",
+    pause: "مکث",
+    stop: "توقف",
+    volumeDown: "کاهش صدا",
+    volumeUp: "افزایش صدا",
+    volumeLabel: "صدا",
   },
   en: {
     tagline: "body-controlled space run",
@@ -220,6 +235,13 @@ const T: Record<Lang, Strings> = {
     publishCopied: "Copied!",
     publishShared: "Shared",
     publishFailed: "Copy failed",
+    audioPanel: "Audio",
+    play: "Play",
+    pause: "Pause",
+    stop: "Stop",
+    volumeDown: "Volume Down",
+    volumeUp: "Volume Up",
+    volumeLabel: "Volume",
   },
 };
 
@@ -319,6 +341,46 @@ function GuideIcon() {
   );
 }
 
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
+      <path d="M8 5.5v13l11-6.5-11-6.5z" />
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
+      <path d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z" />
+    </svg>
+  );
+}
+
+function StopIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
+      <rect x="6.5" y="6.5" width="11" height="11" rx="1" />
+    </svg>
+  );
+}
+
+function MinusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden>
+      <path d="M5 12h14" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden>
+      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /* ------------------------------- app -------------------------------- */
 
 const DEFAULT_DEBUG: DebugInfo = {
@@ -357,6 +419,8 @@ export default function App() {
   );
   const [publishState, setPublishState] = useState<"idle" | "copied" | "shared" | "failed">("idle");
   const publishTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [audioState, setAudioState] = useState<AudioState>("stopped");
+  const [vol, setVol] = useState(audio.volume);
 
   const t = T[lang];
   const rtl = lang === "fa";
@@ -373,6 +437,10 @@ export default function App() {
     setLives(3);
     setShieldOn(false);
     changePhase("playing");
+    // background music starts only here — always a user gesture (button or key)
+    void audio.play().then(() => {
+      setAudioState(audio.state);
+    });
   }, [changePhase]);
 
   /** Start / restart the run. Camera is controlled separately by its button. */
@@ -391,6 +459,31 @@ export default function App() {
     }
     if (previewRef.current) await pc.turnOn(previewRef.current);
   }, []);
+
+  /* ------------------- audio controls (Web Audio only) ------------------- */
+  const syncAudio = useCallback(() => {
+    setAudioState(audio.state);
+    setVol(audio.volume);
+  }, []);
+  const handleAudioPlay = useCallback(() => {
+    void audio.play().then(syncAudio);
+  }, [syncAudio]);
+  const handleAudioPause = useCallback(() => {
+    audio.pause();
+    syncAudio();
+  }, [syncAudio]);
+  const handleAudioStop = useCallback(() => {
+    audio.stop();
+    syncAudio();
+  }, [syncAudio]);
+  const handleVolDown = useCallback(() => {
+    audio.volumeDown();
+    syncAudio();
+  }, [syncAudio]);
+  const handleVolUp = useCallback(() => {
+    audio.volumeUp();
+    syncAudio();
+  }, [syncAudio]);
 
   /** Publish the run result: native share sheet, then clipboard, then legacy copy. */
   const publishScore = useCallback(async () => {
@@ -490,8 +583,13 @@ export default function App() {
       },
       onAction: (a) => {
         if (phaseRef.current !== "playing") return;
-        if (a === "shield") triggerShield(gsRef.current);
-        else triggerBoost(gsRef.current);
+        if (a === "shield") {
+          triggerShield(gsRef.current);
+          audio.shield();
+        } else {
+          triggerBoost(gsRef.current);
+          audio.boost();
+        }
       },
     });
     poseRef.current = pc;
@@ -508,7 +606,10 @@ export default function App() {
           e.preventDefault();
           break;
         case "ArrowUp":
-          if (down && !e.repeat && phaseRef.current === "playing") triggerBoost(gsRef.current);
+          if (down && !e.repeat && phaseRef.current === "playing") {
+            triggerBoost(gsRef.current);
+            audio.boost();
+          }
           e.preventDefault();
           break;
         case " ":
@@ -516,7 +617,10 @@ export default function App() {
           if (!down) break;
           if (phaseRef.current === "menu") startGame();
           else if (phaseRef.current === "over" && !e.repeat) restart();
-          else if (phaseRef.current === "playing" && !e.repeat) triggerShield(gsRef.current);
+          else if (phaseRef.current === "playing" && !e.repeat) {
+            triggerShield(gsRef.current);
+            audio.shield();
+          }
           break;
         case "Enter":
           if (down && !e.repeat) {
@@ -553,10 +657,12 @@ export default function App() {
         );
         const hud = hudRef.current;
         if (gs.score !== hud.score) {
+          if (hud.score >= 0 && gs.score > hud.score) audio.star(); // star collected
           hud.score = gs.score;
           setScore(gs.score);
         }
         if (gs.lives !== hud.lives) {
+          if (hud.lives >= 0 && gs.lives < hud.lives) audio.hit(); // meteor collision
           hud.lives = gs.lives;
           setLives(gs.lives);
         }
@@ -580,6 +686,7 @@ export default function App() {
       window.removeEventListener("keyup", ku);
       pc.dispose();
       poseRef.current = null;
+      audio.dispose();
     };
   }, [changePhase, restart, startGame]);
 
@@ -748,8 +855,48 @@ export default function App() {
         )}
       </div>
 
-      {/* --------------------------- camera panel --------------------------- */}
-      <aside className="absolute bottom-4 right-4 z-20 w-40 sm:w-56">
+      {/* ------------------------ audio + camera column ------------------------ */}
+      <aside className="absolute bottom-4 right-4 z-20 flex w-40 flex-col gap-2 sm:w-56">
+        {/* audio controls — Web Audio only, no files */}
+        <div className="cam-panel">
+          <div className="flex items-center justify-between">
+            <span className="hud-label">{t.audioPanel}</span>
+            <span className="text-[9px] font-bold tabular-nums text-ion/90">
+              {t.volumeLabel}: {faNum(Math.round(vol * 100), lang)}
+              {lang === "fa" ? "٪" : "%"}
+            </span>
+          </div>
+          <div className="mt-1.5 flex items-center gap-1">
+            <button
+              onClick={handleAudioPlay}
+              title={t.play}
+              aria-label={t.play}
+              className={`audio-btn ${audioState === "playing" ? "audio-btn--active" : ""}`}
+            >
+              <PlayIcon />
+            </button>
+            <button
+              onClick={handleAudioPause}
+              title={t.pause}
+              aria-label={t.pause}
+              className={`audio-btn ${audioState === "paused" ? "audio-btn--active" : ""}`}
+            >
+              <PauseIcon />
+            </button>
+            <button onClick={handleAudioStop} title={t.stop} aria-label={t.stop} className="audio-btn">
+              <StopIcon />
+            </button>
+            <span className="mx-0.5 h-5 w-px shrink-0 bg-indigo-400/25" />
+            <button onClick={handleVolDown} title={t.volumeDown} aria-label={t.volumeDown} className="audio-btn">
+              <MinusIcon />
+            </button>
+            <button onClick={handleVolUp} title={t.volumeUp} aria-label={t.volumeUp} className="audio-btn">
+              <PlusIcon />
+            </button>
+          </div>
+        </div>
+
+        {/* --------------------------- camera panel --------------------------- */}
         <div className="cam-panel">
           <div className="flex items-center justify-between">
             <span className="hud-label">{t.camera}</span>
