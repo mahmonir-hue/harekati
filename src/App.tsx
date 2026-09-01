@@ -10,8 +10,8 @@ import {
   updateAmbient,
   type GameState,
 } from "./game/engine";
-import { audio, type AudioState } from "./game/audio";
 import { PoseController, POSE_THRESHOLD, type CameraStatus, type DebugInfo, type ModelStatus } from "./game/pose";
+import { audio, type AudioState } from "./game/audio";
 
 type Phase = "menu" | "playing" | "over";
 type Lang = "fa" | "en" | "ar";
@@ -27,8 +27,8 @@ const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
 function faNum(value: string | number, lang: Lang): string {
   const s = String(value);
   if (lang === "en") return s;
-  const digits = lang === "ar" ? AR_DIGITS : FA_DIGITS;
-  return s.replace(/[0-9]/g, (d) => digits[Number(d)]);
+  const table = lang === "ar" ? AR_DIGITS : FA_DIGITS;
+  return s.replace(/[0-9]/g, (d) => table[Number(d)]);
 }
 
 function initialLang(): Lang {
@@ -37,6 +37,15 @@ function initialLang(): Lang {
     return v === "en" || v === "ar" ? v : "fa";
   } catch {
     return "fa";
+  }
+}
+
+function initialBest(): number {
+  try {
+    const v = Number(localStorage.getItem(BEST_KEY));
+    return Number.isFinite(v) && v > 0 ? v : 0;
+  } catch {
+    return 0;
   }
 }
 
@@ -113,6 +122,7 @@ interface Strings {
   creatorLineA: string;
   creatorName: string;
   creatorLineB: string;
+  creatorClass: string;
   instructorLbl: string;
   instructorName: string;
   contactLbl: string;
@@ -123,6 +133,8 @@ interface Strings {
   landscapeHint: string;
   moveLeft: string;
   moveRight: string;
+  navGuide: string;
+  navAbout: string;
 }
 
 const T: Record<Lang, Strings> = {
@@ -172,7 +184,7 @@ const T: Record<Lang, Strings> = {
     descB: " را بگیرید و از ",
     meteors: "شهاب‌سنگ‌ها",
     descC: " دوری کنید.",
-    controlsTitle: "کنترل‌ها — ژست بدن + کیبورد",
+    controlsTitle: "کنترل‌ها — ژست بدن + کیبورد + لمس",
     kbdLabel: "کیبورد",
     scoring: "هر ستاره ۱۰+ امتیاز · هر شهاب‌سنگ ۱− جان · ۳ جان · سپر یک ضربه را دفع می‌کند",
     poseGuide: "راهنمای ژست‌ها",
@@ -196,11 +208,12 @@ const T: Record<Lang, Strings> = {
     volumeLabel: "صدا",
     about: "👨‍💻 درباره سازنده",
     aboutP1: "این پروژه با هدف یادگیری، خلاقیت و تجربه عملی در برنامه‌نویسی و هوش مصنوعی ساخته شده است.",
-    creatorLineA: "این بازی یکی از بازی‌های ساخته‌شده توسط",
-    creatorName: "هانیه، ۱۷ ساله از دبی",
+    creatorLineA: "این برنامه یکی از برنامه‌های ساخته‌شده توسط",
+    creatorName: "سجاد محفوظی، ۱۵ ساله از دبی",
     creatorLineB: "است.",
+    creatorClass: "از کلاس خانم آقایی",
     instructorLbl: "استاد:",
-    instructorName: "دکتر ماه منیر آقایی",
+    instructorName: "خانم آقایی",
     contactLbl: "📞 شماره تماس استاد:",
     help: "🎮 راهنمای بازی",
     closeLbl: "بستن",
@@ -209,6 +222,8 @@ const T: Record<Lang, Strings> = {
     landscapeHint: "برای تجربه بهتر، گوشی را افقی کنید",
     moveLeft: "حرکت به چپ",
     moveRight: "حرکت به راست",
+    navGuide: "راهنمای بازی",
+    navAbout: "درباره سازنده",
   },
   en: {
     tagline: "body-controlled space run",
@@ -256,7 +271,7 @@ const T: Record<Lang, Strings> = {
     descB: ", dodge ",
     meteors: "meteors",
     descC: ", survive the drift.",
-    controlsTitle: "Controls — body poses + keyboard",
+    controlsTitle: "Controls — body poses + keyboard + touch",
     kbdLabel: "Key",
     scoring: "+10 points per star · meteor −1 life · 3 lives · shield absorbs one hit",
     poseGuide: "Pose Guide",
@@ -280,11 +295,12 @@ const T: Record<Lang, Strings> = {
     volumeLabel: "Volume",
     about: "👨‍💻 About the Creator",
     aboutP1: "This project was created with the goal of learning, creativity, and gaining practical experience in programming and artificial intelligence.",
-    creatorLineA: "This game is one of the games created by",
-    creatorName: "Hanieh, a 17-year-old from Dubai",
+    creatorLineA: "This app is one of the apps created by",
+    creatorName: "Sajjad Mahfouzi, a 15-year-old from Dubai",
     creatorLineB: ".",
+    creatorClass: "from Ms. Aghaei's class",
     instructorLbl: "Instructor:",
-    instructorName: "Dr. Mah Monir Aghaei",
+    instructorName: "Ms. Aghaei",
     contactLbl: "📞 Instructor Contact:",
     help: "🎮 Game Guide",
     closeLbl: "Close",
@@ -293,6 +309,8 @@ const T: Record<Lang, Strings> = {
     landscapeHint: "For a better experience, rotate your phone to landscape",
     moveLeft: "Move left",
     moveRight: "Move right",
+    navGuide: "Game Guide",
+    navAbout: "About the Creator",
   },
   ar: {
     tagline: "تحليق فضائي بالتحكم الجسدي",
@@ -340,7 +358,7 @@ const T: Record<Lang, Strings> = {
     descB: " المتساقطة وتفادَ ",
     meteors: "النيازك",
     descC: " لتنجو.",
-    controlsTitle: "التحكم — وضعيات الجسم + لوحة المفاتيح",
+    controlsTitle: "التحكم — وضعيات الجسم + لوحة المفاتيح + اللمس",
     kbdLabel: "المفتاح",
     scoring: "لكل نجم +١٠ نقاط · النيزك −١ روح · ٣ أرواح · الدرع يمتص ضربة واحدة",
     poseGuide: "دليل الوضعيات",
@@ -362,13 +380,14 @@ const T: Record<Lang, Strings> = {
     volumeDown: "خفض الصوت",
     volumeUp: "رفع الصوت",
     volumeLabel: "الصوت",
-    about: "👨‍💻 حول مطوّر اللعبة",
+    about: "👨‍💻 حول مطوّر التطبيق",
     aboutP1: "تم إنشاء هذا المشروع بهدف التعلم والإبداع واكتساب الخبرة العملية في البرمجة والذكاء الاصطناعي.",
-    creatorLineA: "هذه اللعبة هي إحدى الألعاب التي قامت بتطويرها",
-    creatorName: "هانية، البالغة من العمر 17 عامًا من دبي",
+    creatorLineA: "هذا التطبيق هو أحد التطبيقات التي قام بتطويرها",
+    creatorName: "سجّاد محفوظي، 15 عامًا من دبي",
     creatorLineB: ".",
+    creatorClass: "من صف السيدة آقايي",
     instructorLbl: "المدرّسة:",
-    instructorName: "د. ماه منير آقايي",
+    instructorName: "السيدة آقايي",
     contactLbl: "📞 رقم التواصل مع المدرّسة:",
     help: "🎮 دليل اللعبة",
     closeLbl: "إغلاق",
@@ -377,10 +396,12 @@ const T: Record<Lang, Strings> = {
     landscapeHint: "لتجربة أفضل، أدر هاتفك أفقياً",
     moveLeft: "التحرك يساراً",
     moveRight: "التحرك يميناً",
+    navGuide: "دليل اللعبة",
+    navAbout: "حول المطوّر",
   },
 };
 
-/** Exact pose instructions (from the mission brief) for the help panel. */
+/** Exact pose instructions for the help panel. */
 const GUIDE: Record<Lang, Array<{ cls: string; pose: string; action: string }>> = {
   fa: [
     { cls: "Class 1", pose: "دست چپ را به سمت چپ باز کنید", action: "حرکت سفینه به چپ" },
@@ -395,132 +416,170 @@ const GUIDE: Record<Lang, Array<{ cls: string; pose: string; action: string }>> 
     { cls: "Class 4", pose: "Raise both hands", action: "Boost upward" },
   ],
   ar: [
-    { cls: "Class 1", pose: "مدّ الذراع اليسرى نحو اليسار", action: "تحريك السفينة إلى اليسار" },
-    { cls: "Class 2", pose: "مدّ الذراع اليمنى نحو اليمين", action: "تحريك السفينة إلى اليمين" },
-    { cls: "Class 3", pose: "مدّ الذراعين إلى الجانبين", action: "تفعيل الدرع" },
-    { cls: "Class 4", pose: "رفع اليدين إلى الأعلى", action: "الاندفاع نحو الأعلى" },
+    { cls: "Class 1", pose: "مدّ الذراع اليسرى نحو اليسار", action: "تحريك السفينة يساراً" },
+    { cls: "Class 2", pose: "مدّ الذراع اليمنى نحو اليمين", action: "تحريك السفينة يميناً" },
+    { cls: "Class 3", pose: "مدّ كلتا الذراعين إلى الجانبين", action: "تفعيل الدرع" },
+    { cls: "Class 4", pose: "ارفع كلتا اليدين", action: "الاندفاع نحو الأعلى" },
   ],
 };
 
 const KBD_KEYS = ["←", "→", "SPACE", "↑"];
 
-/** Full game guide — written from the actual engine logic, per language. */
-interface GuideContent {
-  objectiveT: string;
-  objectiveB: string;
-  howT: string;
-  how: string[];
-  flowT: string;
-  flow: string[];
-  resultT: string;
-  resultB: string;
-  tipsT: string;
-  tips: string[];
+/* --------------------- full game guide (real logic) --------------------- */
+
+interface HelpSection {
+  title: string;
+  items: string[];
 }
 
-const GUIDE_CONTENT: Record<Lang, GuideContent> = {
+const HELP_GUIDE: Record<Lang, { objectiveT: string; sections: HelpSection[] }> = {
   fa: {
     objectiveT: "🎯 هدف بازی",
-    objectiveB:
-      "سفینه را در میدان فضایی هدایت کنید، ستاره‌های زردِ در حال سقوط را بگیرید و از شهاب‌سنگ‌ها جاخالی بدهید. هرچه ستاره‌های بیشتری جمع کنید و بیشتر دوام بیاورید، امتیاز بالاتری می‌گیرید.",
-    howT: "🎮 روش بازی",
-    how: [
-      "برای شروع، دکمهٔ «شروع بازی» را بزنید (یا کلید Space یا Enter).",
-      "حرکت به چپ و راست: با کیبورد ← و →، با دکمه‌های لمسی بزرگ روی موبایل، یا با ژست بدن پس از روشن کردن دوربین.",
-      "سپر (کلید Space یا کلاس ۳ بدن): یک ضربهٔ شهاب‌سنگ را دفع می‌کند و پس از آن حدود ۱٫۲ ثانیه تا شارژ دوباره زمان لازم است.",
-      "شتاب (کلید ↑ یا کلاس ۴ بدن): سفینه برای لحظه‌ای به سمت بالا می‌پرد.",
-      "هر ستارهٔ زرد = ۱۰+ امتیاز. ستاره‌ها خیلی بیشتر از شهاب‌سنگ‌ها ظاهر می‌شوند.",
-      "برخورد با شهاب‌سنگ = ۱− جان. شما ۳ جان دارید و بعد از هر برخورد، حدود ۱٫۸ ثانیه مصون هستید.",
-    ],
-    flowT: "🔄 روند بازی",
-    flow: [
-      "بازی از منوی اصلی شروع می‌شود؛ با «شروع بازی»، سفینه در نزدیکی پایینِ مرکز صفحه ظاهر می‌شود.",
-      "ستاره‌ها و شهاب‌سنگ‌ها از بالای صفحه به‌آرامی پایین می‌آیند.",
-      "با گرفتن ستاره‌ها امتیاز می‌گیرید و با جاخالی دادن از شهاب‌سنگ‌ها، جان‌هایتان را حفظ می‌کنید.",
-      "امتیاز، جان‌ها و وضعیت سپر همیشه در نوار بالای صفحه نمایش داده می‌شوند.",
-      "وقتی هر سه جان از دست برود، بازی تمام می‌شود.",
-      "با «شروع دوباره» یا کلیدهای Space / R بلافاصله از نو شروع کنید.",
-    ],
-    resultT: "🏆 پایان بازی",
-    resultB:
-      "در پایان، صفحهٔ «بازی تمام شد» امتیاز نهایی، تعداد ستاره‌های گرفته‌شده و بهترین امتیاز شما را نشان می‌دهد. بهترین امتیاز روی همین دستگاه ذخیره می‌شود و با دکمهٔ «انتشار امتیاز» می‌توانید نتیجه را به اشتراک بگذارید.",
-    tipsT: "💡 نکته‌ها",
-    tips: [
-      "حرکت سفینه نرم و پیوسته است؛ نیازی به حرکات تند و پشت‌سرهم نیست — نگه‌داشتن ژست، حرکت را ادامه می‌دهد.",
-      "سپر فقط یک ضربه را دفع می‌کند؛ آن را برای لحظه‌های خطر نگه دارید.",
-      "بعد از هر برخورد، سفینه برای مدت کوتاهی چشمک می‌زند و مصون است — از همین فرصت برای جابه‌جایی استفاده کنید.",
-      "برای تشخیص بهتر ژست‌ها، نور اتاق کافی باشد و بالاتنهٔ شما کامل داخل کادر دوربین باشد.",
-      "اگر دوربین خاموش باشد، کیبورد و دکمه‌های لمسی همیشه کار می‌کنند.",
+    sections: [
+      {
+        title: "🎮 روش بازی",
+        items: [
+          "۱) دکمهٔ «شروع بازی» را بزن تا پرواز آغاز شود و موسیقی فضایی پخش شود.",
+          "۲) کنترل با بدن: دکمهٔ «روشن کردن دوربین» را بزن و ژست بگیر — کلاس ۱ (دست چپ به چپ) حرکت به چپ، کلاس ۲ (دست راست به راست) حرکت به راست، کلاس ۳ (هر دو دست به دو طرف) سپر، کلاس ۴ (هر دو دست بالا) شتاب به بالا.",
+          "۳) کنترل با کیبورد: ← و → برای حرکت، Space سپر، ↑ شتاب، R شروع دوباره.",
+          "۴) کنترل لمسی در موبایل: دکمه‌های ◀ و ▶ را نگه دار؛ 🛡 سپر و ⬆ شتاب.",
+          "۵) ستاره‌ها هر ۰٫۷ تا ۱٫۳ ثانیه و شهاب‌سنگ‌ها هر ۲٫۳ تا ۴ ثانیه ظاهر می‌شوند — ستاره‌ها بیشترند و فرصت کافی داری.",
+        ],
+      },
+      {
+        title: "🔄 روند بازی",
+        items: [
+          "بازی از منوی شروع آغاز می‌شود؛ دوربین فقط با کلیک خودت روشن می‌شود و هیچ دسترسی خودکاری وجود ندارد.",
+          "سفینه نزدیک پایین صفحه شروع می‌کند و به‌آرامی پایین می‌آید؛ شتاب آن را برای مدتی کوتاه بالا می‌برد.",
+          "سپر دقیقاً یک برخورد را جذب می‌کند و بعد ۱٫۲ ثانیه طول می‌کشد تا دوباره آماده شود.",
+          "بعد از هر برخورد، ۱٫۸ ثانیه مصونیت داری تا پشت‌سرهم جان از دست ندهی.",
+          "امتیاز، جان‌ها و وضعیت سپر همیشه در نوار بالای صفحه نمایش داده می‌شوند.",
+        ],
+      },
+      {
+        title: "🏆 پایان بازی",
+        items: [
+          "وقتی هر ۳ جان تمام شود، صفحهٔ پایان بازی ظاهر می‌شود.",
+          "امتیاز نهایی، تعداد ستاره‌های گرفته‌شده و بهترین امتیاز (ذخیره‌شده در مرورگر) نمایش داده می‌شود.",
+          "با «شروع دوباره» یا کلیدهای Space و R دوباره پرواز کن.",
+          "با «انتشار امتیاز» نتیجه را به‌اشتراک بگذار یا کپی کن.",
+        ],
+      },
+      {
+        title: "💡 نکته‌ها",
+        items: [
+          "سپر را برای لحظه‌های شلوغ نگه دار — فقط یک ضربه را دفع می‌کند.",
+          "شتاب کوتاه است؛ برای رد شدن از بین شهاب‌سنگ‌ها زمان‌بندی کن.",
+          "اگر مدل، ژست‌ها را خوب تشخیص نمی‌دهد، نور اتاق را بیشتر کن و کامل داخل کادر دوربین بایست.",
+          "کنترل کیبوردی و لمسی همیشه فعال است — حتی وقتی دوربین خاموش است.",
+          "در موبایل برای تجربهٔ بهتر گوشی را افقی کن.",
+        ],
+      },
     ],
   },
   en: {
     objectiveT: "🎯 Objective",
-    objectiveB:
-      "Steer the spaceship across the space field, catch the falling yellow stars and dodge the meteors. The more stars you collect and the longer you survive, the higher your score.",
-    howT: "🎮 How to play",
-    how: [
-      "Press “Start Game” (or the Space / Enter key) to begin.",
-      "Move left and right with the ← and → keys, the big on-screen touch buttons on mobile, or body poses after turning the camera on.",
-      "Shield (Space key or body Class 3): absorbs exactly one meteor hit, then needs about 1.2 seconds to recharge.",
-      "Boost (↑ key or body Class 4): the ship hops upward for a brief moment.",
-      "Each yellow star = +10 points. Stars appear far more often than meteors.",
-      "Hitting a meteor = −1 life. You have 3 lives, and about 1.8 seconds of invulnerability after each hit.",
-    ],
-    flowT: "🔄 Game flow",
-    flow: [
-      "The game starts from the main menu; after “Start Game” the ship appears near the bottom center of the screen.",
-      "Stars and meteors drift down slowly from the top of the screen.",
-      "Collect stars to score and dodge meteors to keep your lives.",
-      "Score, lives and shield status are always visible in the top bar.",
-      "When all three lives are lost, the game ends.",
-      "Press “Restart” or the Space / R keys to instantly play again.",
-    ],
-    resultT: "🏆 Game results",
-    resultB:
-      "At the end, the “Game Over” screen shows your final score, the number of stars caught and your best score. The best score is saved on this device, and the “Publish Score” button lets you share your result.",
-    tipsT: "💡 Tips",
-    tips: [
-      "Ship movement is smooth and continuous — no need for repeated quick gestures; holding a pose keeps the ship moving.",
-      "The shield absorbs only one hit; save it for dangerous moments.",
-      "After each hit the ship blinks and is invulnerable for a short time — use that moment to reposition.",
-      "For better pose detection, keep the room well lit and your upper body fully inside the camera frame.",
-      "If the camera is off, the keyboard and touch buttons always work.",
+    sections: [
+      {
+        title: "🎮 How to Play",
+        items: [
+          "1) Press “Start Game” to begin the run — space music starts with it.",
+          "2) Body control: press “Turn Camera On”, then pose — Class 1 (left arm to the left) moves left, Class 2 (right arm to the right) moves right, Class 3 (both arms sideways) activates the shield, Class 4 (both hands up) boosts upward.",
+          "3) Keyboard: ← and → to move, Space for shield, ↑ to boost, R to restart.",
+          "4) Touch controls on mobile: hold ◀ and ▶ to steer; tap 🛡 for shield and ⬆ to boost.",
+          "5) Stars appear every 0.7–1.3 s and meteors every 2.3–4 s — stars are more frequent, so you always have a chance.",
+        ],
+      },
+      {
+        title: "🔄 Game Flow",
+        items: [
+          "The game starts from the menu; the camera turns on only when you click its button — nothing is accessed automatically.",
+          "The ship starts near the bottom and slowly sinks; boost lifts it up for a short moment.",
+          "The shield absorbs exactly one hit, then needs 1.2 s to recharge.",
+          "After each hit you get 1.8 s of invulnerability, so you never lose lives back-to-back.",
+          "Score, lives and shield status are always visible in the top HUD.",
+        ],
+      },
+      {
+        title: "🏆 Game Over",
+        items: [
+          "When all 3 lives are lost, the game-over screen appears.",
+          "It shows your final score, stars caught and best score (saved in your browser).",
+          "Press “Restart” or the Space / R keys to fly again.",
+          "Use “Publish Score” to share or copy your result.",
+        ],
+      },
+      {
+        title: "💡 Tips",
+        items: [
+          "Save the shield for crowded moments — it blocks only one hit.",
+          "Boost is short; time it to slip between meteors.",
+          "If the model struggles with your poses, add more light and stand fully inside the camera frame.",
+          "Keyboard and touch controls always work — even with the camera off.",
+          "On phones, landscape mode gives the best experience.",
+        ],
+      },
     ],
   },
   ar: {
     objectiveT: "🎯 هدف اللعبة",
-    objectiveB:
-      "قُد السفينة في الميدان الفضائي، والتقط النجوم الصفراء المتساقطة وتفادَ النيازك. كلما جمعت نجوماً أكثر وصمدت أطول، ارتفعت نقاطك.",
-    howT: "🎮 طريقة اللعب",
-    how: [
-      "اضغط «ابدأ اللعبة» (أو مفتاح المسافة / Enter) للبدء.",
-      "التحرك يميناً ويساراً: بمفتاحي ← و→، أو بأزرار اللمس الكبيرة على الجوال، أو بوضعيات الجسم بعد تشغيل الكاميرا.",
-      "الدرع (مفتاح المسافة أو وضعية Class 3): يمتص ضربة نيزك واحدة فقط، ثم يحتاج نحو ١٫٢ ثانية لإعادة الشحن.",
-      "الاندفاع (مفتاح ↑ أو وضعية Class 4): تقفز السفينة نحو الأعلى لحظة قصيرة.",
-      "كل نجم أصفر = +١٠ نقاط. تظهر النجوم أكثر بكثير من النيازك.",
-      "الاصطدام بنيزك = −١ روح. لديك ٣ أرواح، وتكون محمياً نحو ١٫٨ ثانية بعد كل اصطدام.",
-    ],
-    flowT: "🔄 سير اللعبة",
-    flow: [
-      "تبدأ اللعبة من القائمة الرئيسية؛ بعد «ابدأ اللعبة» تظهر السفينة قرب أسفل منتصف الشاشة.",
-      "تهبط النجوم والنيازك ببطء من أعلى الشاشة.",
-      "اجمع النجوم لتحصد النقاط وتفادَ النيازك للحفاظ على أرواحك.",
-      "تظهر النقاط والأرواح وحالة الدرع دائماً في الشريط العلوي.",
-      "عند خسارة الأرواح الثلاثة تنتهي اللعبة.",
-      "اضغط «إعادة البدء» أو مفتاحي المسافة / R للبدء من جديد فوراً.",
-    ],
-    resultT: "🏆 نهاية اللعبة",
-    resultB:
-      "في النهاية تعرض شاشة «انتهت اللعبة» نتيجتك النهائية وعدد النجوم الملتقطة وأفضل نتيجة لك. تُحفظ أفضل نتيجة على هذا الجهاز، ويُمكّنك زر «نشر النتيجة» من مشاركة نتيجتك.",
-    tipsT: "💡 نصائح",
-    tips: [
-      "حركة السفينة ناعمة ومستمرة — لا حاجة لحركات سريعة متكررة؛ إبقاء الوضعية يواصل التحريك.",
-      "الدرع يمتص ضربة واحدة فقط؛ احتفظ به للحظات الخطر.",
-      "بعد كل اصطدام تومض السفينة وتكون محمية لفترة قصيرة — استغلها لإعادة التموضع.",
-      "لكشف أفضل للوضعيات، أبقِ الغرفة مضاءة جيداً واجعل الجزء العلوي من جسمك كاملاً داخل إطار الكاميرا.",
-      "إذا كانت الكاميرا مطفأة، تعمل لوحة المفاتيح وأزرار اللمس دائماً.",
+    sections: [
+      {
+        title: "🎮 طريقة اللعب",
+        items: [
+          "١) اضغط «ابدأ اللعبة» لبدء الجولة — تبدأ الموسيقى الفضائية معها.",
+          "٢) التحكم بالجسم: اضغط «تشغيل الكاميرا» ثم اتّخذ الوضعية — الوضعية ١ (الذراع اليسرى يساراً) للتحرك يساراً، الوضعية ٢ (الذراع اليمنى يميناً) للتحرك يميناً، الوضعية ٣ (الذراعان إلى الجانبين) لتفعيل الدرع، الوضعية ٤ (رفع اليدين) للاندفاع نحو الأعلى.",
+          "٣) لوحة المفاتيح: ← و → للتحرك، المسافة للدرع، ↑ للاندفاع، R لإعادة البدء.",
+          "٤) التحكم باللمس على الجوال: استمر بالضغط على ◀ و ▶ للتوجيه؛ 🛡 للدرع و ⬆ للاندفاع.",
+          "٥) تظهر النجوم كل ٠٫٧–١٫٣ ثانية والنيازك كل ٢٫٣–٤ ثوانٍ — النجوم أكثر، فلديك دائماً فرصة.",
+        ],
+      },
+      {
+        title: "🔄 سير اللعبة",
+        items: [
+          "تبدأ اللعبة من القائمة؛ تعمل الكاميرا فقط عند الضغط على زرها — لا يوجد وصول تلقائي.",
+          "تبدأ السفينة قرب الأسفل وتهبط ببطء؛ يرفعها الاندفاع لفترة قصيرة.",
+          "يمتص الدرع ضربة واحدة فقط، ثم يحتاج ١٫٢ ثانية لإعادة الشحن.",
+          "بعد كل إصابة تحصل على ١٫٨ ثانية من الحصانة حتى لا تخسر الأرواح تباعاً.",
+          "النقاط والأرواح وحالة الدرع ظاهرة دائماً في الشريط العلوي.",
+        ],
+      },
+      {
+        title: "🏆 نهاية اللعبة",
+        items: [
+          "عند فقدان الأرواح الثلاثة تظهر شاشة نهاية اللعبة.",
+          "تُعرض النتيجة النهائية وعدد النجوم الملتقطة وأفضل نتيجة (محفوظة في متصفحك).",
+          "اضغط «إعادة البدء» أو مفتاحي المسافة و R للطيران من جديد.",
+          "استخدم «نشر النتيجة» لمشاركة نتيجتك أو نسخها.",
+        ],
+      },
+      {
+        title: "💡 نصائح",
+        items: [
+          "احتفظ بالدرع للحظات المزدحمة — فهو يصد ضربة واحدة فقط.",
+          "الاندفاع قصير؛ وقّته للمرور بين النيازك.",
+          "إذا لم يتعرف النموذج على وضعياتك جيداً، زد إضاءة الغرفة وقف بالكامل داخل إطار الكاميرا.",
+          "التحكم بلوحة المفاتيح واللمس يعمل دائماً — حتى مع إطفاء الكاميرا.",
+          "على الجوال، الوضع الأفقي يمنحك أفضل تجربة.",
+        ],
+      },
     ],
   },
+};
+
+const OBJECTIVE: Record<Lang, string[]> = {
+  fa: [
+    "سفینهٔ کوچک را در میدان فضایی هدایت کن؛ ستاره‌های طلایی را بگیر و از شهاب‌سنگ‌ها دوری کن تا زنده بمانی.",
+    "هر ستاره ۱۰+ امتیاز دارد و هر برخورد با شهاب‌سنگ ۱− جان. با ۳ جان شروع می‌کنی و با تمام‌شدن آن‌ها بازی پایان می‌یابد.",
+  ],
+  en: [
+    "Steer a tiny spaceship through space: catch golden stars and dodge meteors to survive.",
+    "Each star is worth +10 points and every meteor hit costs 1 life. You start with 3 lives — lose them all and the run ends.",
+  ],
+  ar: [
+    "قُد سفينة فضائية صغيرة في الفضاء: التقط النجوم الذهبية وتفادَ النيازك لتنجو.",
+    "كل نجم يساوي +١٠ نقاط وكل إصابة بنيزك تكلّفك روحاً واحداً. تبدأ بـ٣ أرواح — عند فقدانها تنتهي الجولة.",
+  ],
 };
 
 /* --------------------------- tiny SVG icons --------------------------- */
@@ -591,9 +650,16 @@ function CameraIcon() {
   );
 }
 
-function GuideIcon() {
+function GuideIcon({ big }: { big?: boolean }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+    <svg
+      viewBox="0 0 24 24"
+      className={`${big ? "h-5 w-5" : "h-3.5 w-3.5"} shrink-0`}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      aria-hidden
+    >
       <circle cx="12" cy="12" r="9" />
       <path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.9c-.7.3-1 .8-1 1.5" strokeLinecap="round" />
       <circle cx="12" cy="16.6" r="0.4" fill="currentColor" stroke="none" />
@@ -605,6 +671,15 @@ function PlayIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
       <path d="M8 5.5v13l11-6.5-11-6.5z" />
+    </svg>
+  );
+}
+
+function PersonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <circle cx="12" cy="7.5" r="3.4" />
+      <path d="M5 20c1.2-3.5 3.9-5.2 7-5.2s5.8 1.7 7 5.2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -643,94 +718,79 @@ function PlusIcon() {
 
 function CloseIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.6" aria-hidden>
       <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
     </svg>
   );
 }
 
-function ChevronIcon({ left }: { left?: boolean }) {
+function PanelIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden>
+      <rect x="4" y="4" width="16" height="16" rx="1.5" />
+      <path d="M4 10h16M10 10v10" />
+    </svg>
+  );
+}
+
+function Chevron({ dir }: { dir: "left" | "right" | "up" }) {
+  const rot = dir === "left" ? 90 : dir === "right" ? -90 : 0;
   return (
     <svg
       viewBox="0 0 24 24"
-      className={`h-6 w-6 ${left ? "" : "rotate-180"}`}
+      className="h-6 w-6"
       fill="none"
       stroke="currentColor"
       strokeWidth="2.6"
+      style={{ transform: `rotate(${rot}deg)` }}
       aria-hidden
     >
-      <path d="M14.5 5.5L8 12l6.5 6.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 14.5L12 8.5l6 6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
-function BoostIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
-      <path d="M12 20V5M6 10.5L12 4.5l6 6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+/* ------------------------------ modal shell ------------------------------ */
 
-function SlidersIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <path d="M4 7h10M18 7h2M4 12h4M12 12h8M4 17h13M20 17h0.5" strokeLinecap="round" />
-      <circle cx="16" cy="7" r="2" />
-      <circle cx="10" cy="12" r="2" />
-      <circle cx="19" cy="17" r="2" />
-    </svg>
-  );
-}
-
-/* ------------------------------ modal -------------------------------- */
-
-function Modal({
+function HelpModal({
   title,
-  closeLabel,
-  rtl,
   onClose,
+  closeLbl,
+  rtl,
   children,
 }: {
   title: string;
-  closeLabel: string;
-  rtl: boolean;
   onClose: () => void;
+  closeLbl: string;
+  rtl: boolean;
   children: React.ReactNode;
 }) {
-  useEffect(() => {
-    const f = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", f);
-    return () => window.removeEventListener("keydown", f);
-  }, [onClose]);
-
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(3,5,20,0.72)] sm:items-center sm:p-4"
+      dir={rtl ? "rtl" : "ltr"}
+      className="absolute inset-0 z-50 flex items-center justify-center bg-[rgba(3,5,20,0.72)] p-3"
       onClick={onClose}
-      role="dialog"
-      aria-modal="true"
     >
       <div
-        dir={rtl ? "rtl" : "ltr"}
         onClick={(e) => e.stopPropagation()}
-        className="bracket-panel modal-scroll anim-rise relative max-h-[92dvh] w-full overflow-y-auto px-5 pb-[max(1.4rem,env(safe-area-inset-bottom))] pt-4 sm:max-w-lg sm:px-8 sm:py-6"
+        className="bracket-panel anim-rise flex max-h-[90dvh] w-full max-w-lg flex-col px-5 py-5 sm:px-8 sm:py-7"
       >
         <span className="corner-b" />
-        <div className="sticky top-0 z-10 -mx-5 flex items-center justify-between gap-3 border-b border-indigo-400/20 bg-[#0b1035]/95 px-5 pb-2.5 pt-1 backdrop-blur-sm sm:-mx-8 sm:px-8">
-          <h3 className="font-display text-base font-black text-white sm:text-lg">{title}</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="font-display text-xl font-black text-white glow-soft sm:text-2xl">{title}</h3>
           <button
             onClick={onClose}
-            aria-label={closeLabel}
-            title={closeLabel}
-            className="flex h-9 w-9 shrink-0 items-center justify-center border border-indigo-400/40 bg-[#10163a] text-indigo-200 transition-colors duration-150 hover:bg-[#151d4c] hover:text-white"
+            aria-label={closeLbl}
+            title={closeLbl}
+            className="btn-ghost flex h-9 w-9 shrink-0 items-center justify-center"
           >
             <CloseIcon />
           </button>
         </div>
-        {children}
+        <div className="modal-scroll mt-4 flex-1 overflow-y-auto pe-1">{children}</div>
+        <button onClick={onClose} className="btn-primary mt-5 w-full px-8 py-3 text-sm font-black">
+          {closeLbl}
+        </button>
       </div>
     </div>
   );
@@ -776,32 +836,38 @@ export default function App() {
   const publishTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [audioState, setAudioState] = useState<AudioState>("stopped");
   const [vol, setVol] = useState(audio.volume);
-  const [modal, setModal] = useState<null | "about" | "guide">(null);
+  const [bestScore, setBestScore] = useState<number>(initialBest);
+  const [showAbout, setShowAbout] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [bestScore, setBestScore] = useState<number>(() => {
-    try {
-      return Number(localStorage.getItem(BEST_KEY)) || 0;
-    } catch {
-      return 0;
-    }
+  const [isNarrow, setIsNarrow] = useState<boolean>(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches
+  );
+  const [hintVisible, setHintVisible] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(pointer: coarse)").matches && window.innerHeight > window.innerWidth;
   });
-  const [narrow, setNarrow] = useState<boolean>(
-    () => typeof window !== "undefined" && window.innerWidth < 640
-  );
-  const [showTouch, setShowTouch] = useState<boolean>(
-    () =>
-      typeof window !== "undefined" &&
-      (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768)
-  );
-  const [portraitPhone, setPortraitPhone] = useState<boolean>(
-    () =>
-      typeof window !== "undefined" && window.innerHeight > window.innerWidth && window.innerWidth < 768
-  );
-  const [hintGone, setHintGone] = useState(false);
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [hintDismissed, setHintDismissed] = useState(false);
 
   const t = T[lang];
   const rtl = lang !== "en";
-  const gc = GUIDE_CONTENT[lang];
+  const narrow = isNarrow;
+
+  const titleNode =
+    lang === "fa" ? (
+      <>
+        خلبان <span className="text-ion glow-cyan">کیهان</span>
+      </>
+    ) : lang === "ar" ? (
+      <>
+        طيّار <span className="text-ion glow-cyan">الكون</span>
+      </>
+    ) : (
+      <>
+        POSE<span className="text-ion glow-cyan">PILOT</span>
+      </>
+    );
 
   const changePhase = useCallback((p: Phase) => {
     phaseRef.current = p;
@@ -816,9 +882,7 @@ export default function App() {
     setShieldOn(false);
     changePhase("playing");
     // background music starts only here — always a user gesture (button or key)
-    void audio.play().then(() => {
-      setAudioState(audio.state);
-    });
+    void audio.play().then(() => setAudioState(audio.state));
   }, [changePhase]);
 
   /** Start / restart the run. Camera is controlled separately by its button. */
@@ -917,6 +981,21 @@ export default function App() {
     legacyCopy();
   }, [lang, score]);
 
+  /* ---------------------- touch control handlers ---------------------- */
+  const pressDir = useCallback((dir: "left" | "right", down: boolean) => {
+    kbRef.current[dir] = down;
+  }, []);
+  const tapShield = useCallback(() => {
+    if (phaseRef.current !== "playing") return;
+    triggerShield(gsRef.current);
+    audio.shield();
+  }, []);
+  const tapBoost = useCallback(() => {
+    if (phaseRef.current !== "playing") return;
+    triggerBoost(gsRef.current);
+    audio.boost();
+  }, []);
+
   /* ------------------ language: dir, lang attr, storage ------------------ */
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -928,68 +1007,23 @@ export default function App() {
     }
   }, [lang, rtl]);
 
-  /* ------------------- responsive layout state (fluid) ------------------- */
+  /* ------------------ responsive: narrow / landscape hint ------------------ */
   useEffect(() => {
-    const onResize = () => {
-      setNarrow(window.innerWidth < 640);
-      setShowTouch(window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768);
-      setPortraitPhone(window.innerHeight > window.innerWidth && window.innerWidth < 768);
-    };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    const mq = window.matchMedia("(max-width: 639px)");
+    const on = () => setIsNarrow(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
   }, []);
 
-  /* close the mobile control panel with Escape */
   useEffect(() => {
-    if (!panelOpen) return;
-    const f = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPanelOpen(false);
-    };
-    window.addEventListener("keydown", f);
-    return () => window.removeEventListener("keydown", f);
-  }, [panelOpen]);
-
-  /* auto-hide the rotate hint after a few seconds */
-  useEffect(() => {
-    if (portraitPhone && phase === "playing" && !hintGone) {
-      const id = setTimeout(() => setHintGone(true), 7000);
-      return () => clearTimeout(id);
+    if (!hintDismissed && hintVisible) {
+      hintTimer.current = setTimeout(() => setHintVisible(false), 7000);
+      return () => {
+        if (hintTimer.current) clearTimeout(hintTimer.current);
+      };
     }
-  }, [portraitPhone, phase, hintGone]);
-
-  /* ----------------------- touch gameplay handlers ----------------------- */
-  const holdStart = useCallback(
-    (side: "left" | "right") => (e: React.PointerEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      e.currentTarget.setPointerCapture?.(e.pointerId);
-      kbRef.current[side] = true;
-    },
-    []
-  );
-  const holdEnd = useCallback(() => {
-    kbRef.current.left = false;
-    kbRef.current.right = false;
-  }, []);
-  const tapShield = useCallback(
-    (e: React.PointerEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      if (phaseRef.current === "playing") {
-        triggerShield(gsRef.current);
-        audio.shield();
-      }
-    },
-    []
-  );
-  const tapBoost = useCallback(
-    (e: React.PointerEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      if (phaseRef.current === "playing") {
-        triggerBoost(gsRef.current);
-        audio.boost();
-      }
-    },
-    []
-  );
+  }, [hintVisible, hintDismissed]);
 
   /* ------------------------- mount: loop + input ------------------------- */
   useEffect(() => {
@@ -1015,7 +1049,7 @@ export default function App() {
     const pc = new PoseController({
       onModelStatus: (s, err) => {
         setModelStatus(s);
-        setModelErr(err);
+        setModelErr(err ?? "");
       },
       onCameraStatus: (s) => setCamStatus(s),
       onDebug: (d) => setDbg(d),
@@ -1169,7 +1203,6 @@ export default function App() {
           ? `${t.modelError} ${modelErr || "unknown error"}`
           : t.modelReady;
 
-  /* short state labels for the AI STATUS debug panel */
   const stateColor = (s: string) =>
     s === "ready" || s === "running" || s === "on"
       ? "text-emerald-300"
@@ -1199,39 +1232,28 @@ export default function App() {
           ? "bg-alert shadow-[0_0_8px_rgba(255,93,115,0.8)]"
           : "bg-slate-600";
 
-  const titleNode =
-    lang === "en" ? (
-      <>
-        POSE<span className="text-ion glow-cyan">PILOT</span>
-      </>
-    ) : lang === "ar" ? (
-      <>
-        طيّار <span className="text-ion glow-cyan">الكون</span>
-      </>
-    ) : (
-      <>
-        خلبان <span className="text-ion glow-cyan">کیهان</span>
-      </>
-    );
-
   const guideRows = GUIDE[lang].map((g, i) => (
     <div key={g.cls} className={i > 0 ? "mt-2 border-t border-indigo-400/15 pt-2" : ""}>
-      <p className="font-display text-[9px] font-bold tracking-[0.18em] text-ion/85">{g.cls}</p>
+      <p className={`font-display text-[9px] font-bold text-ion/85 ${lang === "en" ? "tracking-[0.18em]" : ""}`}>
+        {g.cls}
+      </p>
       <p className="mt-0.5 text-[10.5px] font-medium leading-snug text-indigo-100/90">{g.pose}</p>
       <p className="text-[10.5px] font-bold leading-snug text-star">→ {g.action}</p>
     </div>
   ));
 
+  const volumeText = `${t.volumeLabel}: ${faNum(Math.round(vol * 100), lang)}${lang === "en" ? "%" : "٪"}`;
+
   return (
     <div dir={rtl ? "rtl" : "ltr"} className="relative h-full w-full touch-manipulation select-none overflow-hidden font-body">
       <canvas ref={canvasRef} className="absolute inset-0 z-0 touch-none" />
 
-      {/* verification version badge (top-left corner) */}
+      {/* version badge (top corner, opposite the header) */}
       <div
         dir="ltr"
         className="pointer-events-none absolute left-2 top-2 z-50 border border-ion/50 bg-[#0a0f2e]/95 px-2 py-0.5 font-display text-[9px] font-bold tracking-[0.14em] text-ion shadow-[0_0_10px_rgba(94,234,255,0.25)]"
       >
-        VERSION: UI-FIX-1
+        VERSION: NAV-1
       </div>
 
       <div className="scanlines pointer-events-none absolute inset-0 z-10 opacity-50" />
@@ -1258,6 +1280,24 @@ export default function App() {
               </button>
             ))}
           </div>
+          <div className="pointer-events-auto mt-1.5 flex flex-wrap items-center gap-1.5">
+            <button
+              onClick={() => setShowHelp(true)}
+              title={t.navGuide}
+              className={`nav-mini ${showHelp ? "nav-mini--active" : ""}`}
+            >
+              <GuideIcon />
+              {t.navGuide}
+            </button>
+            <button
+              onClick={() => setShowAbout(true)}
+              title={t.navAbout}
+              className={`nav-mini ${showAbout ? "nav-mini--active" : ""}`}
+            >
+              <PersonIcon />
+              {t.navAbout}
+            </button>
+          </div>
         </div>
 
         <div className="ms-auto flex flex-wrap items-center justify-end gap-1.5 sm:gap-3">
@@ -1282,6 +1322,16 @@ export default function App() {
             <span className="hud-label hidden sm:inline">{shieldOn ? t.shieldUp : t.noShield}</span>
           </div>
 
+          {/* standalone game-guide icon — opens the full guide from anywhere */}
+          <button
+            onClick={() => setShowHelp(true)}
+            aria-label={t.help}
+            title={t.help}
+            className="btn-ghost pointer-events-auto flex min-h-9 items-center px-2.5 py-2 sm:px-3"
+          >
+            <GuideIcon />
+          </button>
+
           {phase !== "menu" && (
             <button
               onClick={restart}
@@ -1296,104 +1346,116 @@ export default function App() {
         </div>
       </header>
 
-      {/* --------------------------- pose guide panel (desktop) --------------------------- */}
-      {!narrow && (
-      <div className="absolute bottom-4 left-4 z-20 flex w-44 flex-col-reverse items-start gap-2 sm:w-64">
-        <button
-          onClick={() => setGuideOpen((o) => !o)}
-          className="btn-ghost pointer-events-auto flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold"
-        >
-          <GuideIcon />
-          {t.poseGuide}
-          <span className="text-ion">{guideOpen ? "−" : "+"}</span>
-        </button>
-
-        {guideOpen && <div className="cam-panel w-full">{guideRows}</div>}
-      </div>
-      )}
-
-      {/* mobile: floating control-panel opener */}
-      {narrow && phase !== "menu" && (
-        <button
-          onClick={() => setPanelOpen(true)}
-          aria-label={t.controlPanel}
-          title={t.controlPanel}
-          className="mini-btn absolute right-2.5 z-30 bottom-[max(6rem,calc(env(safe-area-inset-bottom)+5.5rem))]"
-        >
-          <SlidersIcon />
-        </button>
-      )}
-
-      {/* mobile: backdrop for the bottom-sheet panel */}
+      {/* ----------------------- mobile floating buttons ----------------------- */}
       {narrow && panelOpen && (
         <div
-          className="fixed inset-0 z-30 bg-[rgba(3,5,20,0.55)]"
+          className="absolute inset-0 z-30 bg-black/30"
           onClick={() => setPanelOpen(false)}
           aria-hidden
         />
       )}
 
-      {/* touch gameplay controls (phones & tablets with coarse pointers) */}
-      {showTouch && phase === "playing" && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end justify-between gap-2 px-3 pb-[max(0.9rem,env(safe-area-inset-bottom))]">
-          <div className="pointer-events-auto flex gap-2.5">
+      {narrow && (
+        <div className="absolute bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-3 z-40 flex items-center gap-2">
+          <button
+            onClick={() => setShowHelp(true)}
+            aria-label={t.help}
+            title={t.help}
+            className="mini-btn"
+          >
+            <GuideIcon big />
+          </button>
+          <button
+            onClick={() => setPanelOpen((o) => !o)}
+            aria-label={t.controlPanel}
+            title={t.controlPanel}
+            className="mini-btn"
+          >
+            <PanelIcon />
+          </button>
+        </div>
+      )}
+
+      {/* ----------------------- touch controls (mobile) ----------------------- */}
+      {narrow && phase === "playing" && (
+        <>
+          <div
+            dir="ltr"
+            className="absolute bottom-[calc(1.25rem+env(safe-area-inset-bottom))] left-3 z-40 flex items-end gap-3"
+          >
             <button
               className="touch-btn"
               aria-label={t.moveLeft}
-              onPointerDown={holdStart("left")}
-              onPointerUp={holdEnd}
-              onPointerCancel={holdEnd}
-              onPointerLeave={holdEnd}
-              onContextMenu={(e) => e.preventDefault()}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                pressDir("left", true);
+              }}
+              onPointerUp={() => pressDir("left", false)}
+              onPointerLeave={() => pressDir("left", false)}
+              onPointerCancel={() => pressDir("left", false)}
             >
-              <ChevronIcon left />
+              <Chevron dir="left" />
             </button>
             <button
               className="touch-btn"
               aria-label={t.moveRight}
-              onPointerDown={holdStart("right")}
-              onPointerUp={holdEnd}
-              onPointerCancel={holdEnd}
-              onPointerLeave={holdEnd}
-              onContextMenu={(e) => e.preventDefault()}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                pressDir("right", true);
+              }}
+              onPointerUp={() => pressDir("right", false)}
+              onPointerLeave={() => pressDir("right", false)}
+              onPointerCancel={() => pressDir("right", false)}
             >
-              <ChevronIcon />
+              <Chevron dir="right" />
             </button>
           </div>
-          <div className="pointer-events-auto flex gap-2.5">
-            <button
-              className="touch-btn text-star"
-              aria-label={t.boost}
-              onPointerDown={tapBoost}
-              onContextMenu={(e) => e.preventDefault()}
-            >
-              <BoostIcon />
+          <div
+            dir="ltr"
+            className="absolute bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-3 z-40 flex items-end gap-3"
+          >
+            <button className="touch-btn" aria-label={t.boost} onPointerDown={(e) => { e.preventDefault(); tapBoost(); }}>
+              <Chevron dir="up" />
             </button>
+            <button className="touch-btn" aria-label={t.shield} onPointerDown={(e) => { e.preventDefault(); tapShield(); }}>
+              <ShieldIcon on />
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* --------------------------- landscape hint --------------------------- */}
+      {hintVisible && !hintDismissed && (
+        <div className="absolute left-1/2 top-[calc(4.6rem+env(safe-area-inset-top))] z-40 w-max max-w-[92vw] -translate-x-1/2">
+          <div className="anim-rise flex items-center gap-2 border border-indigo-400/40 bg-[#0d1340]/95 px-3.5 py-2 text-[11px] font-bold text-indigo-100 shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
+            <span>📱↔️ {t.landscapeHint}</span>
             <button
-              className="touch-btn text-ion"
-              aria-label={t.shield}
-              onPointerDown={tapShield}
-              onContextMenu={(e) => e.preventDefault()}
+              onClick={() => {
+                setHintDismissed(true);
+                setHintVisible(false);
+              }}
+              aria-label={t.closeLbl}
+              className="flex h-6 w-6 shrink-0 items-center justify-center text-indigo-300/80 hover:text-white"
             >
-              <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor" aria-hidden>
-                <path d="M12 2l8 3.5V11c0 5.2-3.4 8.6-8 11-4.6-2.4-8-5.8-8-11V5.5L12 2z" />
-              </svg>
+              <CloseIcon />
             </button>
           </div>
         </div>
       )}
 
-      {/* soft, non-blocking rotate hint for portrait phones */}
-      {portraitPhone && phase === "playing" && !hintGone && (
-        <div className="anim-rise absolute left-1/2 top-[4.4rem] z-20 flex -translate-x-1/2 items-center gap-2 border border-indigo-400/30 bg-[#0d1340]/90 py-1.5 pe-1.5 ps-3 text-[10px] font-bold text-indigo-200 shadow-[0_6px_20px_rgba(0,0,0,0.4)]">
-          <span>📱 {t.landscapeHint}</span>
+      {/* --------------------------- pose guide panel (desktop) --------------------------- */}
+      {!narrow && (
+        <div className="absolute bottom-4 left-4 z-20 flex w-44 flex-col-reverse items-start gap-2 sm:w-64">
           <button
-            onClick={() => setHintGone(true)}
-            aria-label={t.closeLbl}
-            className="flex h-6 w-6 items-center justify-center text-indigo-300/80 hover:text-white"
+            onClick={() => setGuideOpen((o) => !o)}
+            className="btn-ghost pointer-events-auto flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold"
           >
-            <CloseIcon />
+            <GuideIcon />
+            {t.poseGuide}
+            <span className="text-ion">{guideOpen ? "−" : "+"}</span>
           </button>
+
+          {guideOpen && <div className="cam-panel w-full">{guideRows}</div>}
         </div>
       )}
 
@@ -1421,14 +1483,12 @@ export default function App() {
           </div>
         )}
         {narrow && <div className="cam-panel">{guideRows}</div>}
+
         {/* audio controls — Web Audio only, no files */}
         <div className="cam-panel">
           <div className="flex items-center justify-between">
             <span className="hud-label">{t.audioPanel}</span>
-            <span className="text-[9px] font-bold tabular-nums text-ion/90">
-              {t.volumeLabel}: {faNum(Math.round(vol * 100), lang)}
-              {lang === "en" ? "%" : "٪"}
-            </span>
+            <span className="text-[9px] font-bold tabular-nums text-ion/90">{volumeText}</span>
           </div>
           <div className="mt-1.5 flex items-center gap-1">
             <button
@@ -1467,21 +1527,22 @@ export default function App() {
             <span className={`h-2 w-2 rounded-full ${dotClass}`} />
           </div>
 
-          {/* verification status line */}
-          <p className="text-[9.5px] font-bold leading-snug text-emerald-300/90">
-            {lang === "fa" ? "نسخه جدید کنترل حرکتی بارگذاری شد" : "New Pose Fix Loaded"}
-          </p>
-
           <div className="cam-frame relative aspect-[4/3] overflow-hidden">
             <div ref={previewRef} className="absolute inset-0" />
             {camStatus !== "on" && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 p-2 text-center">
                 {camStatus === "starting" ? (
-                  <span className="font-display text-[9px] font-bold tracking-[0.18em] text-indigo-300 anim-pulse-glow">
+                  <span className="anim-pulse-glow font-display text-[9px] font-bold tracking-[0.18em] text-indigo-300">
                     ...
                   </span>
                 ) : (
-                  <svg viewBox="0 0 24 24" className={`h-8 w-8 ${camStatus === "off" ? "text-slate-700" : "text-slate-600"}`} fill="none" stroke="currentColor" strokeWidth="1.6">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className={`h-8 w-8 ${camStatus === "off" ? "text-slate-700" : "text-slate-600"}`}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  >
                     <path d="M2 8l4-3h12a2 2 0 0 1 2 2v2l2-1v8l-2-1v2a2 2 0 0 1-2 2H6l-4-3V8z" strokeLinejoin="round" />
                     {(camStatus === "denied" || camStatus === "insecure" || camStatus === "error") && (
                       <path d="M4 4l16 16" strokeLinecap="round" />
@@ -1499,9 +1560,11 @@ export default function App() {
             )}
           </div>
 
-          {/* temporary AI STATUS debug panel — verifies the pose pipeline in the live browser */}
+          {/* AI STATUS debug panel — verifies the pose pipeline in the live browser */}
           <div className="border border-indigo-400/20 bg-[#0a0f30]/80 px-2.5 py-2">
-            <p className="font-display text-[9px] font-bold tracking-[0.18em] text-star">{t.aiStatus}</p>
+            <p className={`font-display text-[9px] font-bold text-star ${lang === "en" ? "tracking-[0.18em]" : ""}`}>
+              {t.aiStatus}
+            </p>
             <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9.5px] font-semibold text-indigo-200/85">
               <p>
                 TensorFlow: <b className={stateColor(dbg.tf)}>{tfText}</b>
@@ -1576,84 +1639,85 @@ export default function App() {
       {phase === "menu" && (
         <div className="modal-scroll absolute inset-0 z-30 overflow-y-auto bg-[rgba(3,5,20,0.62)]">
           <div className="flex min-h-full items-center justify-center px-3 pb-8 pt-28 sm:px-4 sm:pb-8 sm:pt-36">
-          <div className="bracket-panel anim-rise w-full max-w-xl px-4 py-6 sm:px-10 sm:py-9">
-            <span className="corner-b" />
-            <div className="flex items-center gap-2">
-              <span className="h-px flex-1 bg-gradient-to-r from-transparent to-ion/50" />
-              <p className="font-display text-[9px] font-bold tracking-[0.3em] text-ion/80">{t.badge}</p>
-              <span className="h-px flex-1 bg-gradient-to-l from-transparent to-ion/50" />
-            </div>
-
-            <div className="mt-5 text-center">
-              <h2 className="font-display text-3xl font-black text-white glow-soft sm:text-5xl">{titleNode}</h2>
-              <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-indigo-200/90">
-                {t.descA}
-                <span className="text-star">{t.stars}</span>
-                {t.descB}
-                <span className="text-ember">{t.meteors}</span>
-                {t.descC}
-              </p>
-            </div>
-
-            <p className="mt-5 text-center font-display text-[10px] font-bold text-indigo-300/80">{t.controlsTitle}</p>
-            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {GUIDE[lang].map((g, i) => (
-                <div
-                  key={g.cls}
-                  className="flex items-start justify-between gap-3 border border-indigo-400/15 bg-[#0d1340]/70 px-3.5 py-2.5 transition-colors duration-150 hover:border-ion/40 hover:bg-[#101a52]"
-                >
-                  <div className="min-w-0">
-                    <p className="flex flex-wrap items-center gap-1.5">
-                      <span className="font-display text-[9px] font-bold tracking-[0.18em] text-ion/85">{g.cls}</span>
-                      <span className="text-[9px] font-bold text-indigo-400/70">
-                        · {t.kbdLabel} <span className="kbd">{KBD_KEYS[i]}</span>
-                      </span>
-                    </p>
-                    <p className="mt-1 text-xs font-medium leading-snug text-indigo-100/90">{g.pose}</p>
-                    <p className="text-xs font-bold leading-snug text-star">→ {g.action}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <p className="mt-4 text-center text-[11px] font-medium tracking-wide text-indigo-300/75">
-              {t.scoring}
-            </p>
-
-            {bestScore > 0 && (
-              <p className="mt-4 text-center font-display text-[11px] font-bold text-star/90">
-                🏆 {t.bestScore}: {faNum(bestScore, lang)}
-              </p>
-            )}
-
-            <div className="mt-6 flex flex-col items-center gap-3">
-              <button onClick={startGame} className="btn-primary anim-floaty px-10 py-3.5 text-base font-black sm:px-12">
-                {t.startGame}
-              </button>
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <button
-                  onClick={() => setModal("about")}
-                  className="btn-ghost flex min-h-10 items-center gap-2 px-4 py-2.5 text-[11px] font-bold sm:text-xs"
-                >
-                  {t.about}
-                </button>
-                <button
-                  onClick={() => setModal("guide")}
-                  className="btn-ghost flex min-h-10 items-center gap-2 px-4 py-2.5 text-[11px] font-bold sm:text-xs"
-                >
-                  {t.help}
-                </button>
+            <div className="bracket-panel anim-rise w-full max-w-xl px-4 py-6 sm:px-10 sm:py-9">
+              <span className="corner-b" />
+              <div className="flex items-center gap-2">
+                <span className="h-px flex-1 bg-gradient-to-r from-transparent to-ion/50" />
+                <p className={`font-display text-[9px] font-bold text-ion/80 ${lang === "en" ? "tracking-[0.3em]" : ""}`}>
+                  {t.badge}
+                </p>
+                <span className="h-px flex-1 bg-gradient-to-l from-transparent to-ion/50" />
               </div>
-              <p className="flex items-center gap-2 text-[10px] font-medium text-indigo-300/70">
-                <span
-                  className={`inline-block h-1.5 w-1.5 rounded-full ${
-                    modelStatus === "loading" ? "bg-star anim-pulse-glow" : modelStatus === "error" ? "bg-alert" : "bg-ion"
-                  }`}
-                />
-                {modelStatus === "loading" ? t.modelLoading : modelStatus === "error" ? t.modelError : t.camNote}
-              </p>
+
+              <div className="mt-5 text-center">
+                <h2 className="font-display text-3xl font-black text-white glow-soft sm:text-5xl">{titleNode}</h2>
+                <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-indigo-200/90">
+                  {t.descA}
+                  <span className="text-star">{t.stars}</span>
+                  {t.descB}
+                  <span className="text-ember">{t.meteors}</span>
+                  {t.descC}
+                </p>
+              </div>
+
+              <p className="mt-5 text-center font-display text-[10px] font-bold text-indigo-300/80">{t.controlsTitle}</p>
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {GUIDE[lang].map((g, i) => (
+                  <div
+                    key={g.cls}
+                    className="flex items-start justify-between gap-3 border border-indigo-400/15 bg-[#0d1340]/70 px-3.5 py-2.5 transition-colors duration-150 hover:border-ion/40 hover:bg-[#101a52]"
+                  >
+                    <div className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-1.5">
+                        <span className={`font-display text-[9px] font-bold text-ion/85 ${lang === "en" ? "tracking-[0.18em]" : ""}`}>
+                          {g.cls}
+                        </span>
+                        <span className="text-[9px] font-bold text-indigo-400/70">
+                          · {t.kbdLabel} <span className="kbd">{KBD_KEYS[i]}</span>
+                        </span>
+                      </p>
+                      <p className="mt-1 text-xs font-medium leading-snug text-indigo-100/90">{g.pose}</p>
+                      <p className="text-xs font-bold leading-snug text-star">→ {g.action}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="mt-4 text-center text-[11px] font-medium tracking-wide text-indigo-300/75">{t.scoring}</p>
+
+              <div className="mt-6 flex flex-col items-center gap-3">
+                <button onClick={startGame} className="btn-primary anim-floaty w-full max-w-xs px-12 py-3.5 text-base font-black sm:w-auto">
+                  {t.startGame}
+                </button>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <button
+                    onClick={() => setShowHelp(true)}
+                    className="btn-ghost pointer-events-auto px-5 py-2.5 text-xs font-bold"
+                  >
+                    {t.help}
+                  </button>
+                  <button
+                    onClick={() => setShowAbout(true)}
+                    className="btn-ghost pointer-events-auto px-5 py-2.5 text-xs font-bold"
+                  >
+                    {t.about}
+                  </button>
+                </div>
+                {bestScore > 0 && (
+                  <p className="text-[11px] font-bold text-nebula">
+                    🏆 {t.bestScore}: {faNum(bestScore, lang)}
+                  </p>
+                )}
+                <p className="flex items-center gap-2 text-[10px] font-medium text-indigo-300/70">
+                  <span
+                    className={`inline-block h-1.5 w-1.5 rounded-full ${
+                      modelStatus === "loading" ? "bg-star anim-pulse-glow" : modelStatus === "error" ? "bg-alert" : "bg-ion"
+                    }`}
+                  />
+                  {modelStatus === "loading" ? t.modelLoading : modelStatus === "error" ? t.modelError : t.camNote}
+                </p>
+              </div>
             </div>
-          </div>
           </div>
         </div>
       )}
@@ -1662,165 +1726,129 @@ export default function App() {
       {phase === "over" && (
         <div className="modal-scroll absolute inset-0 z-30 overflow-y-auto bg-[rgba(3,5,20,0.6)]">
           <div className="flex min-h-full items-center justify-center px-3 pb-8 pt-28 sm:px-4 sm:pb-8 sm:pt-36">
-          <div className="bracket-panel anim-rise w-full max-w-md px-5 py-7 text-center sm:px-8 sm:py-9">
-            <span className="corner-b" />
-            <p className={`font-display text-[10px] font-bold text-alert ${rtl ? "" : "tracking-[0.34em]"}`}>
-              {t.hullBreach}
-            </p>
-            <h2
-              className="mt-2 font-display text-4xl font-black text-white"
-              style={{ textShadow: "0 0 26px rgba(255,93,115,0.45)" }}
-            >
-              {t.gameOver}
-            </h2>
-
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-4 sm:gap-x-8">
-              <div>
-                <p className="hud-label">{t.finalScore}</p>
-                <p className="mt-1 font-display text-3xl font-black tabular-nums text-star glow-gold sm:text-4xl">
-                  {faNum(String(score).padStart(4, "0"), lang)}
-                </p>
-              </div>
-              <div className="hidden h-12 w-px bg-indigo-400/25 sm:block" />
-              <div>
-                <p className="hud-label">{t.starsCaught}</p>
-                <p className="mt-1 font-display text-3xl font-black tabular-nums text-ion glow-cyan sm:text-4xl">
-                  {faNum(gsRef.current.collected, lang)}
-                </p>
-              </div>
-              <div className="hidden h-12 w-px bg-indigo-400/25 sm:block" />
-              <div>
-                <p className="hud-label">🏆 {t.bestScore}</p>
-                <p className="mt-1 font-display text-3xl font-black tabular-nums text-nebula drop-shadow-[0_0_14px_rgba(124,92,255,0.55)] sm:text-4xl">
-                  {faNum(Math.max(bestScore, score), lang)}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <button onClick={restart} className="btn-primary px-10 py-3.5 text-base font-black">
-                {t.restart}
-              </button>
-              <button
-                onClick={() => void publishScore()}
-                className={`btn-gold flex items-center gap-2 px-6 py-3.5 text-sm font-black ${
-                  publishState === "copied" || publishState === "shared" ? "text-emerald-300" : ""
-                }`}
+            <div className="bracket-panel anim-rise w-full max-w-md px-5 py-7 text-center sm:px-8 sm:py-9">
+              <span className="corner-b" />
+              <p className={`font-display text-[10px] font-bold text-alert ${lang === "en" ? "tracking-[0.34em]" : ""}`}>
+                {t.hullBreach}
+              </p>
+              <h2
+                className="mt-2 font-display text-4xl font-black text-white"
+                style={{ textShadow: "0 0 26px rgba(255,93,115,0.45)" }}
               >
-                {publishState === "copied" || publishState === "shared" ? <CheckIcon /> : <ShareIcon />}
-                <span className={publishState === "failed" ? "text-alert" : ""}>
-                  {publishState === "copied"
-                    ? t.publishCopied
-                    : publishState === "shared"
-                      ? t.publishShared
-                      : publishState === "failed"
-                        ? t.publishFailed
-                        : t.publish}
-                </span>
-              </button>
+                {t.gameOver}
+              </h2>
+
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-4 sm:gap-x-8">
+                <div>
+                  <p className="hud-label">{t.finalScore}</p>
+                  <p className="mt-1 font-display text-3xl font-black tabular-nums text-star glow-gold sm:text-4xl">
+                    {faNum(String(score).padStart(4, "0"), lang)}
+                  </p>
+                </div>
+                <div className="hidden h-12 w-px bg-indigo-400/25 sm:block" />
+                <div>
+                  <p className="hud-label">{t.starsCaught}</p>
+                  <p className="mt-1 font-display text-3xl font-black tabular-nums text-ion glow-cyan sm:text-4xl">
+                    {faNum(gsRef.current.collected, lang)}
+                  </p>
+                </div>
+                <div className="hidden h-12 w-px bg-indigo-400/25 sm:block" />
+                <div>
+                  <p className="hud-label">🏆 {t.bestScore}</p>
+                  <p className="mt-1 font-display text-3xl font-black tabular-nums text-nebula drop-shadow-[0_0_14px_rgba(124,92,255,0.55)] sm:text-4xl">
+                    {faNum(Math.max(bestScore, score), lang)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                <button onClick={restart} className="btn-primary px-10 py-3.5 text-base font-black">
+                  {t.restart}
+                </button>
+                <button
+                  onClick={() => void publishScore()}
+                  className={`btn-gold flex items-center gap-2 px-6 py-3.5 text-sm font-black ${
+                    publishState === "copied" || publishState === "shared" ? "text-emerald-300" : ""
+                  }`}
+                >
+                  {publishState === "copied" || publishState === "shared" ? <CheckIcon /> : <ShareIcon />}
+                  <span className={publishState === "failed" ? "text-alert" : ""}>
+                    {publishState === "copied"
+                      ? t.publishCopied
+                      : publishState === "shared"
+                        ? t.publishShared
+                        : publishState === "failed"
+                          ? t.publishFailed
+                          : t.publish}
+                  </span>
+                </button>
+              </div>
+              <p className="mt-3 text-[10px] font-medium text-indigo-300/70">
+                {t.relaunchA} <span className="kbd mx-1">SPACE</span> {t.relaunchB} <span className="kbd mx-1">R</span>{" "}
+                {t.relaunchC}
+              </p>
             </div>
-            <p className="mt-3 text-[10px] font-medium text-indigo-300/70">
-              {t.relaunchA} <span className="kbd mx-1">SPACE</span> {t.relaunchB} <span className="kbd mx-1">R</span>{" "}
-              {t.relaunchC}
-            </p>
-          </div>
           </div>
         </div>
       )}
 
-      {/* ------------------------------ about the creator ------------------------------ */}
-      {modal === "about" && (
-        <Modal title={t.about} closeLabel={t.closeLbl} rtl={rtl} onClose={() => setModal(null)}>
-          <div className="mt-4 space-y-4">
-            <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center border border-ion/40 bg-ion/10 text-2xl shadow-[0_0_18px_rgba(94,234,255,0.2)]">
-                👨‍💻
-              </span>
-              <p className="text-sm font-semibold leading-relaxed text-indigo-100/90">{t.aboutP1}</p>
-            </div>
-
-            <div className="border border-star/30 bg-star/5 px-4 py-3">
-              <p className="text-sm leading-relaxed text-indigo-100/90">
-                {t.creatorLineA}{" "}
-                <b className="font-display text-base text-star glow-gold">{t.creatorName}</b> {t.creatorLineB}
-              </p>
-            </div>
-
-            <div className="border border-indigo-400/25 bg-[#0d1340]/70 px-4 py-3">
-              <p className="text-sm text-indigo-100/90">
-                <span className="hud-label">{t.instructorLbl}</span>{" "}
-                <b className="font-display text-base text-ion">{t.instructorName}</b>
-              </p>
-              <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-indigo-100/90">
-                <span className="hud-label">{t.contactLbl}</span>
-                <a
-                  href={`tel:${PHONE}`}
-                  dir="ltr"
-                  className="font-display text-lg font-bold tracking-wider text-ion underline-offset-4 hover:underline"
-                >
-                  {PHONE}
-                </a>
-              </p>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* ------------------------------ game guide & help ------------------------------ */}
-      {modal === "guide" && (
-        <Modal title={t.help} closeLabel={t.closeLbl} rtl={rtl} onClose={() => setModal(null)}>
-          <div className="mt-4 space-y-5">
-            <section>
-              <h4 className="guide-h">{gc.objectiveT}</h4>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-indigo-100/85">{gc.objectiveB}</p>
-            </section>
-
-            <section>
-              <h4 className="guide-h">{gc.howT}</h4>
-              <ol className="mt-2 space-y-2">
-                {gc.how.map((s, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-indigo-100/85">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border border-ion/50 bg-ion/10 font-display text-[10px] font-bold text-ion">
-                      {faNum(i + 1, lang)}
-                    </span>
-                    <span>{s}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-
-            <section>
-              <h4 className="guide-h">{gc.flowT}</h4>
-              <ol className="mt-2 space-y-2">
-                {gc.flow.map((s, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-[13px] leading-relaxed text-indigo-100/85">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border border-star/50 bg-star/10 font-display text-[10px] font-bold text-star">
-                      {faNum(i + 1, lang)}
-                    </span>
-                    <span>{s}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-
-            <section>
-              <h4 className="guide-h">{gc.resultT}</h4>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-indigo-100/85">{gc.resultB}</p>
-            </section>
-
-            <section className="border border-indigo-400/20 bg-[#0d1340]/60 px-4 py-3">
-              <h4 className="guide-h">{gc.tipsT}</h4>
-              <ul className="mt-2 space-y-1.5">
-                {gc.tips.map((s, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-indigo-100/85">
-                    <span className="mt-0.5 text-star">✦</span>
-                    <span>{s}</span>
+      {/* ------------------------------ game guide modal ------------------------------ */}
+      {showHelp && (
+        <HelpModal title={t.help} onClose={() => setShowHelp(false)} closeLbl={t.closeLbl} rtl={rtl}>
+          <p className="guide-h">{HELP_GUIDE[lang].objectiveT}</p>
+          <ul className="mt-2 space-y-2">
+            {OBJECTIVE[lang].map((line, i) => (
+              <li key={i} className="text-sm leading-relaxed text-indigo-100/90">
+                {line}
+              </li>
+            ))}
+          </ul>
+          {HELP_GUIDE[lang].sections.map((sec) => (
+            <div key={sec.title} className="mt-5">
+              <p className="guide-h">{sec.title}</p>
+              <ul className="mt-2 space-y-2">
+                {sec.items.map((item, i) => (
+                  <li key={i} className="text-sm leading-relaxed text-indigo-100/90">
+                    {item}
                   </li>
                 ))}
               </ul>
-            </section>
+            </div>
+          ))}
+          <div className="mt-6 border border-star/40 bg-star/10 px-4 py-3 text-center">
+            <button onClick={() => setShowAbout(true)} className="font-display text-sm font-black text-star hover:text-white">
+              {t.about}
+            </button>
           </div>
-        </Modal>
+        </HelpModal>
+      )}
+
+      {/* ------------------------------ about modal ------------------------------ */}
+      {showAbout && (
+        <HelpModal title={t.about} onClose={() => setShowAbout(false)} closeLbl={t.closeLbl} rtl={rtl}>
+          <div className="text-center">
+            <span className="text-5xl">👨‍💻</span>
+          </div>
+          <p className="mt-4 text-sm leading-relaxed text-indigo-100/90">{t.aboutP1}</p>
+          <p className="mt-4 text-sm leading-relaxed text-indigo-100/90">
+            {t.creatorLineA}{" "}
+            <span className="font-bold text-ion">{t.creatorName}</span>
+            {t.creatorLineB}
+          </p>
+          <p className="mt-1 text-sm font-bold text-star">{t.creatorClass}</p>
+          <div className="mt-5 space-y-2 border border-indigo-400/25 bg-[#0d1340]/70 px-4 py-3.5">
+            <p className="text-sm text-indigo-100/90">
+              <span className="hud-label">{t.instructorLbl}</span>{" "}
+              <span className="font-bold text-indigo-100">{t.instructorName}</span>
+            </p>
+            <p className="text-sm text-indigo-100/90">
+              {t.contactLbl}{" "}
+              <a dir="ltr" href={`tel:${PHONE}`} className="font-bold tabular-nums text-star underline-offset-4 hover:underline">
+                {faNum(PHONE, lang)}
+              </a>
+            </p>
+          </div>
+        </HelpModal>
       )}
     </div>
   );

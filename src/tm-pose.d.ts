@@ -1,6 +1,5 @@
 /* Ambient module declaration for @teachablemachine/pose (npm).
-   Guarantees stable typings for the subset of the API the game uses,
-   regardless of the type files shipped inside the package. */
+   Guarantees stable typings for the subset of the API the game uses. */
 
 declare module "@teachablemachine/pose" {
   export interface PosePrediction {
@@ -8,13 +7,8 @@ declare module "@teachablemachine/pose" {
     probability: number;
   }
 
-  export interface CustomPoseMetadata {
-    labels?: string[];
-    [key: string]: unknown;
-  }
-
   export interface CustomPoseNetModel {
-    metadata?: CustomPoseMetadata;
+    metadata?: { labels?: string[]; [key: string]: unknown };
     getMaxClasses?(): number;
     estimatePose(
       sample: HTMLVideoElement | HTMLCanvasElement | HTMLImageElement
@@ -22,8 +16,5 @@ declare module "@teachablemachine/pose" {
     predict(posenetOutput: Float32Array): Promise<PosePrediction[]>;
   }
 
-  export function load(
-    modelUrl: string,
-    metadataUrl?: string
-  ): Promise<CustomPoseNetModel>;
+  export function load(modelUrl: string, metadataUrl?: string): Promise<CustomPoseNetModel>;
 }
