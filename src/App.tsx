@@ -118,7 +118,6 @@ interface Strings {
   volumeUp: string;
   volumeLabel: string;
   about: string;
-  aboutBtn: string;
   aboutP1: string;
   creatorLineA: string;
   creatorName: string;
@@ -134,6 +133,8 @@ interface Strings {
   landscapeHint: string;
   moveLeft: string;
   moveRight: string;
+  navGuide: string;
+  navAbout: string;
 }
 
 const T: Record<Lang, Strings> = {
@@ -221,6 +222,8 @@ const T: Record<Lang, Strings> = {
     landscapeHint: "برای تجربه بهتر، گوشی را افقی کنید",
     moveLeft: "حرکت به چپ",
     moveRight: "حرکت به راست",
+    navGuide: "راهنمای بازی",
+    navAbout: "درباره سازنده",
   },
   en: {
     tagline: "body-controlled space run",
@@ -306,6 +309,8 @@ const T: Record<Lang, Strings> = {
     landscapeHint: "For a better experience, rotate your phone to landscape",
     moveLeft: "Move left",
     moveRight: "Move right",
+    navGuide: "Game Guide",
+    navAbout: "About the Creator",
   },
   ar: {
     tagline: "تحليق فضائي بالتحكم الجسدي",
@@ -391,6 +396,8 @@ const T: Record<Lang, Strings> = {
     landscapeHint: "لتجربة أفضل، أدر هاتفك أفقياً",
     moveLeft: "التحرك يساراً",
     moveRight: "التحرك يميناً",
+    navGuide: "دليل اللعبة",
+    navAbout: "حول المطوّر",
   },
 };
 
@@ -664,6 +671,15 @@ function PlayIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
       <path d="M8 5.5v13l11-6.5-11-6.5z" />
+    </svg>
+  );
+}
+
+function PersonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <circle cx="12" cy="7.5" r="3.4" />
+      <path d="M5 20c1.2-3.5 3.9-5.2 7-5.2s5.8 1.7 7 5.2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -1237,7 +1253,7 @@ export default function App() {
         dir="ltr"
         className="pointer-events-none absolute left-2 top-2 z-50 border border-ion/50 bg-[#0a0f2e]/95 px-2 py-0.5 font-display text-[9px] font-bold tracking-[0.14em] text-ion shadow-[0_0_10px_rgba(94,234,255,0.25)]"
       >
-        VERSION: UI-FIX-2
+        VERSION: NAV-1
       </div>
 
       <div className="scanlines pointer-events-none absolute inset-0 z-10 opacity-50" />
@@ -1263,6 +1279,24 @@ export default function App() {
                 {l === "fa" ? "فارسی" : l === "ar" ? "العربية" : "English"}
               </button>
             ))}
+          </div>
+          <div className="pointer-events-auto mt-1.5 flex flex-wrap items-center gap-1.5">
+            <button
+              onClick={() => setShowHelp(true)}
+              title={t.navGuide}
+              className={`nav-mini ${showHelp ? "nav-mini--active" : ""}`}
+            >
+              <GuideIcon />
+              {t.navGuide}
+            </button>
+            <button
+              onClick={() => setShowAbout(true)}
+              title={t.navAbout}
+              className={`nav-mini ${showAbout ? "nav-mini--active" : ""}`}
+            >
+              <PersonIcon />
+              {t.navAbout}
+            </button>
           </div>
         </div>
 

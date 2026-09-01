@@ -169,9 +169,9 @@ class AudioManager {
   }
 
   setVolume(v: number): void {
-    this.volume = Math.min(1, Math.max(0, v));
+    this._volume = Math.min(1, Math.max(0, v));
     if (this.master && this.ctx) {
-      this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.03);
+      this.master.gain.setTargetAtTime(this._volume, this.ctx.currentTime, 0.03);
     }
   }
 
