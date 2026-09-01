@@ -118,6 +118,7 @@ interface Strings {
   volumeUp: string;
   volumeLabel: string;
   about: string;
+  aboutBtn: string;
   aboutP1: string;
   creatorLineA: string;
   creatorName: string;

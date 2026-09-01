@@ -17,7 +17,7 @@ class AudioManager {
   private sfxBus: GainNode | null = null;
   private musicNodes: Array<OscillatorNode | AudioBufferSourceNode> = [];
   private pluckTimer: number | null = null;
-  private volume = 0.7;
+  private _volume = 0.7;
   private _state: AudioState = "stopped";
 
   get state(): AudioState {
