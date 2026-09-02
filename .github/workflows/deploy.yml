@@ -1,0 +1,83 @@
+# Deploys the production build (dist/) of "harekati" to GitHub Pages.
+#
+# One-time repo setup (Settings → Pages):
+#   Source: "GitHub Actions"
+#
+# The app is served at https://mahmonir-hue.github.io/harekati/, so Vite is
+# built with a relative base (--base=./) — all assets resolve correctly under
+# the /harekati/ sub-path (no hard-coded base, no vite.config.ts edits needed).
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, but don't cancel in-progress builds.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (relative base for the /harekati/ sub-path)
+        run: npm run build -- --base=./
+
+      - name: Verify production build has no dev-source references
+        run: |
+          echo "Scanning dist/ for dev-source references..."
+          if grep -rn "src/main\.tsx" dist/; then
+            echo "::error::Production build still references the dev entry module"
+            exit 1
+          fi
+          if grep -rn 'src="/src/' dist/index.html; then
+            echo "::error::dist/index.html references a /src/ dev path"
+            exit 1
+          fi
+          if ! grep -q 'assets/index-.*\.js' dist/index.html; then
+            echo "::error::dist/index.html does not reference hashed bundles — build output looks wrong"
+            exit 1
+          fi
+          echo "OK — production build contains no dev-source references."
+
+      - name: Disable Jekyll processing
+        run: touch dist/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
