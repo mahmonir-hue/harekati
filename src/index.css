@@ -433,3 +433,19 @@ button {
   color: #eaf2ff;
   font-size: 0.95rem;
 }
+
+/* highlighted motion-control note (About + Game Guide) */
+.note-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  border: 1px solid rgba(94, 234, 255, 0.32);
+  border-inline-start: 3px solid #5eeaff;
+  background: linear-gradient(180deg, rgba(94, 234, 255, 0.09), rgba(94, 234, 255, 0.02));
+  padding: 0.65rem 0.8rem;
+  color: #d9f6ff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.8;
+  box-shadow: 0 0 18px rgba(94, 234, 255, 0.07);
+}

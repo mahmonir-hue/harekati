@@ -119,6 +119,7 @@ interface Strings {
   volumeLabel: string;
   about: string;
   aboutP1: string;
+  motionNote: string;
   creatorLineA: string;
   creatorName: string;
   creatorLineB: string;
@@ -208,6 +209,7 @@ const T: Record<Lang, Strings> = {
     volumeLabel: "صدا",
     about: "👨‍💻 درباره سازنده",
     aboutP1: "این پروژه با هدف یادگیری، خلاقیت و تجربه عملی در برنامه‌نویسی و هوش مصنوعی ساخته شده است.",
+    motionNote: "این یک بازی حرکتی با دوربین روشن است؛ با حرکت دست‌ها جلوی دوربین، این سفینه جابه‌جا می‌شود.",
     creatorLineA: "این برنامه یکی از برنامه‌های ساخته‌شده توسط",
     creatorName: "سجاد محفوظی، ۱۵ ساله از دبی",
     creatorLineB: "است.",
@@ -295,6 +297,7 @@ const T: Record<Lang, Strings> = {
     volumeLabel: "Volume",
     about: "👨‍💻 About the Creator",
     aboutP1: "This project was created with the goal of learning, creativity, and gaining practical experience in programming and artificial intelligence.",
+    motionNote: "This is a motion-controlled game played with the camera on — move your hands in front of the camera and the spaceship moves.",
     creatorLineA: "This app is one of the apps created by",
     creatorName: "Sajjad Mahfouzi, a 15-year-old from Dubai",
     creatorLineB: ".",
@@ -382,6 +385,7 @@ const T: Record<Lang, Strings> = {
     volumeLabel: "الصوت",
     about: "👨‍💻 حول مطوّر التطبيق",
     aboutP1: "تم إنشاء هذا المشروع بهدف التعلم والإبداع واكتساب الخبرة العملية في البرمجة والذكاء الاصطناعي.",
+    motionNote: "هذه لعبة حركية تعمل بالكاميرا؛ حرّك يديك أمام الكاميرا وستتحرك السفينة الفضائية.",
     creatorLineA: "هذا التطبيق هو أحد التطبيقات التي قام بتطويرها",
     creatorName: "سجّاد محفوظي، 15 عامًا من دبي",
     creatorLineB: ".",
@@ -671,6 +675,18 @@ function PlayIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
       <path d="M8 5.5v13l11-6.5-11-6.5z" />
+    </svg>
+  );
+}
+
+function MotionNoteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0 text-ion" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M8 12.2V7a1.4 1.4 0 0 1 2.8 0v4" />
+      <path d="M10.8 11V5.6a1.4 1.4 0 0 1 2.8 0V11" />
+      <path d="M13.6 11V7a1.4 1.4 0 0 1 2.8 0v5.6" />
+      <path d="M16.4 12.6v-2a1.4 1.4 0 0 1 2.8 0v4.2c0 3.4-2.3 5.7-5.7 5.7h-.9c-2.3 0-3.9-1-5.3-2.9l-2.4-3.2a1.4 1.4 0 0 1 2.2-1.7l1.5 1.6" />
+      <path d="M4.6 5.4 3.1 4M5.2 8.4H2.9" opacity=".65" />
     </svg>
   );
 }
@@ -1253,7 +1269,7 @@ export default function App() {
         dir="ltr"
         className="pointer-events-none absolute left-2 top-2 z-50 border border-ion/50 bg-[#0a0f2e]/95 px-2 py-0.5 font-display text-[9px] font-bold tracking-[0.14em] text-ion shadow-[0_0_10px_rgba(94,234,255,0.25)]"
       >
-        VERSION: NAV-1
+        VERSION: NOTE-1
       </div>
 
       <div className="scanlines pointer-events-none absolute inset-0 z-10 opacity-50" />
@@ -1796,7 +1812,11 @@ export default function App() {
       {showHelp && (
         <HelpModal title={t.help} onClose={() => setShowHelp(false)} closeLbl={t.closeLbl} rtl={rtl}>
           <p className="guide-h">{HELP_GUIDE[lang].objectiveT}</p>
-          <ul className="mt-2 space-y-2">
+          <div className="note-callout mt-2">
+            <MotionNoteIcon />
+            <p>{t.motionNote}</p>
+          </div>
+          <ul className="mt-3 space-y-2">
             {OBJECTIVE[lang].map((line, i) => (
               <li key={i} className="text-sm leading-relaxed text-indigo-100/90">
                 {line}
@@ -1830,6 +1850,10 @@ export default function App() {
             <span className="text-5xl">👨‍💻</span>
           </div>
           <p className="mt-4 text-sm leading-relaxed text-indigo-100/90">{t.aboutP1}</p>
+          <div className="note-callout mt-4">
+            <MotionNoteIcon />
+            <p>{t.motionNote}</p>
+          </div>
           <p className="mt-4 text-sm leading-relaxed text-indigo-100/90">
             {t.creatorLineA}{" "}
             <span className="font-bold text-ion">{t.creatorName}</span>
